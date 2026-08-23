@@ -823,6 +823,8 @@ th{color:#94a3b8}
 .esito-btn{padding:4px 8px;margin:2px;border-radius:4px;border:none;cursor:pointer;font-size:.75em;background:#475569;color:#e2e8f0;transition:all .2s}
 .esito-btn:hover{background:#3b82f6}
 .esito-btn.selected{background:#22c55e;color:#000}
+.match-card{display:none}
+.mobile-cards{display:none}
 @media(max-width:600px){
   body{padding:10px;padding-bottom:200px}
   h1{font-size:1.2em}
@@ -837,6 +839,17 @@ th{color:#94a3b8}
   .mia-schedina-footer{gap:8px;font-size:.85em}
   .mia-schedina-footer input{width:55px;padding:5px}
   .btn{padding:6px 12px;font-size:.8em}
+  #t1 table{display:none}
+  .mobile-cards{display:block}
+  .match-card{display:block;background:#334155;border-radius:8px;padding:12px;margin-bottom:10px}
+  .match-card.top5{border-left:3px solid #f59e0b}
+  .match-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+  .match-card-teams{font-weight:bold;font-size:.95em}
+  .match-card-info{color:#94a3b8;font-size:.75em}
+  .match-card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+  .match-card-stat{background:#1e293b;padding:6px;border-radius:4px;text-align:center;font-size:.75em}
+  .match-card-stat b{display:block;color:#38bdf8;font-size:.9em}
+  .match-card-sug{background:#166534;padding:8px;border-radius:6px;margin-top:8px;font-size:.85em}
 }
 </style></head><body>
 <h1>🎯 Bet Analyzer</h1>
@@ -917,6 +930,15 @@ ${d.partite.map(p => {
   const sugBox = sug ? '<div style="margin-top:8px;padding:8px;background:'+sugBoxColor+';border-radius:6px">🎯 <b>'+sug.tipo+'</b> @'+sug.quota?.toFixed(2)+' | Modello '+sug.prob?.toFixed(0)+'%'+sugBoxValue+'</div>' : '';
   return '<tr class="match-row '+(p.isTop5 ? "top5" : "")+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'" style="cursor:pointer" onclick="toggleAnalisi(\''+p.id+'\')"><td>'+flag+' '+p.partita+(p.isTop5 ? '<span class="badge">TOP5</span>' : "")+(p.hasData ? '<span class="badge" style="background:#22c55e">📊</span>' : '')+'<br><span class="sm">'+p.campionato+'</span></td><td class="sm">'+p.orario+'</td><td>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</td><td>'+p.modello.p1?.toFixed(0)+'% / '+p.modello.pX?.toFixed(0)+'% / '+p.modello.p2?.toFixed(0)+'%</td><td>'+p.modello.over?.toFixed(0)+'% / '+p.modello.under?.toFixed(0)+'%</td><td>'+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</td><td>'+sugCell+'</td></tr><tr id="analisi-'+p.id+'" class="hide"><td colspan="7" style="background:#0f172a;padding:12px"><div style="display:flex;flex-wrap:wrap;gap:6px">'+analisiHtml+'</div>'+extraHtml+sugBox+'</td></tr>';
 }).join("")}</table>
+<div class="mobile-cards">
+${d.partite.map(p => {
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[p.campionato] || "⚽";
+  const sug = p.suggerimento;
+  const ora = p.orario?.split(',')[1]?.trim() || p.orario;
+  const sugHtml = sug ? '<div class="match-card-sug">🎯 <b>'+sug.tipo+'</b> @'+sug.quota?.toFixed(2)+' | '+sug.prob?.toFixed(0)+'%'+(sug.hasValue ? ' <span style="color:#4ade80">VALUE +'+sug.value?.toFixed(0)+'%</span>' : '')+'</div>' : '';
+  return '<div class="match-card '+(p.isTop5 ? 'top5' : '')+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'"><div class="match-card-header"><div><div class="match-card-teams">'+flag+' '+p.partita+'</div><div class="match-card-info">'+p.campionato+(p.isTop5 ? ' • TOP5' : '')+'</div></div><div style="text-align:right"><div style="color:#38bdf8;font-weight:bold">'+ora+'</div></div></div><div class="match-card-stats"><div class="match-card-stat">⚽ Gol Attesi<b>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</b></div><div class="match-card-stat">1X2<b>'+p.modello.p1?.toFixed(0)+'/'+p.modello.pX?.toFixed(0)+'/'+p.modello.p2?.toFixed(0)+'</b></div><div class="match-card-stat">O/U 2.5<b>'+p.modello.over?.toFixed(0)+'/'+p.modello.under?.toFixed(0)+'</b></div></div><div style="font-size:.8em;color:#94a3b8">GG/NG: '+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</div>'+sugHtml+'</div>';
+}).join("")}
+</div>
 </div>
 <div id="t2" class="card hide">
 <h2>🎫 Schedine Consigliate</h2>
@@ -1002,7 +1024,7 @@ function applyFilters(){
   const data = document.getElementById('filterData').value;
   const camp = document.getElementById('filterCamp').value;
   const top5 = document.getElementById('filterTop5').value;
-  document.querySelectorAll('.match-row, .vb-row').forEach(row => {
+  document.querySelectorAll('.match-row, .vb-row, .match-card').forEach(row => {
     let visible = true;
     if(data && row.dataset.data !== data) visible = false;
     if(camp && row.dataset.camp !== camp) visible = false;
