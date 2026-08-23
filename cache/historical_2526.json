@@ -1,0 +1,922 @@
+{
+  "Genoa": {
+    "gf": 41,
+    "gs": 51,
+    "matches": 38
+  },
+  "Lecce": {
+    "gf": 28,
+    "gs": 50,
+    "matches": 38
+  },
+  "Sassuolo": {
+    "gf": 46,
+    "gs": 50,
+    "matches": 38
+  },
+  "Napoli": {
+    "gf": 58,
+    "gs": 36,
+    "matches": 38
+  },
+  "Milan": {
+    "gf": 53,
+    "gs": 35,
+    "matches": 38
+  },
+  "Cremonese": {
+    "gf": 32,
+    "gs": 57,
+    "matches": 38
+  },
+  "Roma": {
+    "gf": 59,
+    "gs": 31,
+    "matches": 38
+  },
+  "Bologna": {
+    "gf": 49,
+    "gs": 46,
+    "matches": 38
+  },
+  "Cagliari": {
+    "gf": 40,
+    "gs": 53,
+    "matches": 38
+  },
+  "Fiorentina": {
+    "gf": 41,
+    "gs": 50,
+    "matches": 38
+  },
+  "Como": {
+    "gf": 65,
+    "gs": 29,
+    "matches": 38
+  },
+  "Lazio": {
+    "gf": 41,
+    "gs": 40,
+    "matches": 38
+  },
+  "Atalanta": {
+    "gf": 51,
+    "gs": 36,
+    "matches": 38
+  },
+  "Pisa": {
+    "gf": 26,
+    "gs": 71,
+    "matches": 38
+  },
+  "Juventus": {
+    "gf": 61,
+    "gs": 34,
+    "matches": 38
+  },
+  "Parma": {
+    "gf": 28,
+    "gs": 46,
+    "matches": 38
+  },
+  "Udinese": {
+    "gf": 45,
+    "gs": 48,
+    "matches": 38
+  },
+  "Verona": {
+    "gf": 25,
+    "gs": 61,
+    "matches": 38
+  },
+  "Inter": {
+    "gf": 89,
+    "gs": 35,
+    "matches": 38
+  },
+  "Torino": {
+    "gf": 44,
+    "gs": 63,
+    "matches": 38
+  },
+  "Pescara": {
+    "gf": 51,
+    "gs": 66,
+    "matches": 38
+  },
+  "Cesena": {
+    "gf": 45,
+    "gs": 56,
+    "matches": 38
+  },
+  "Empoli": {
+    "gf": 47,
+    "gs": 54,
+    "matches": 38
+  },
+  "Padova": {
+    "gf": 39,
+    "gs": 49,
+    "matches": 38
+  },
+  "Virtus Entella": {
+    "gf": 36,
+    "gs": 51,
+    "matches": 38
+  },
+  "Juve Stabia": {
+    "gf": 44,
+    "gs": 45,
+    "matches": 38
+  },
+  "Monza": {
+    "gf": 61,
+    "gs": 32,
+    "matches": 38
+  },
+  "Mantova": {
+    "gf": 45,
+    "gs": 57,
+    "matches": 38
+  },
+  "Palermo": {
+    "gf": 61,
+    "gs": 33,
+    "matches": 38
+  },
+  "Reggiana": {
+    "gf": 36,
+    "gs": 56,
+    "matches": 38
+  },
+  "Spezia": {
+    "gf": 43,
+    "gs": 59,
+    "matches": 38
+  },
+  "Carrarese": {
+    "gf": 47,
+    "gs": 52,
+    "matches": 38
+  },
+  "Venezia": {
+    "gf": 77,
+    "gs": 31,
+    "matches": 38
+  },
+  "Bari": {
+    "gf": 38,
+    "gs": 60,
+    "matches": 38
+  },
+  "Catanzaro": {
+    "gf": 62,
+    "gs": 51,
+    "matches": 38
+  },
+  "Sudtirol": {
+    "gf": 38,
+    "gs": 48,
+    "matches": 38
+  },
+  "Frosinone": {
+    "gf": 76,
+    "gs": 34,
+    "matches": 38
+  },
+  "Avellino": {
+    "gf": 43,
+    "gs": 55,
+    "matches": 38
+  },
+  "Sampdoria": {
+    "gf": 35,
+    "gs": 48,
+    "matches": 38
+  },
+  "Modena": {
+    "gf": 49,
+    "gs": 36,
+    "matches": 38
+  },
+  "Liverpool": {
+    "gf": 63,
+    "gs": 53,
+    "matches": 38
+  },
+  "Bournemouth": {
+    "gf": 58,
+    "gs": 54,
+    "matches": 38
+  },
+  "Aston Villa": {
+    "gf": 56,
+    "gs": 49,
+    "matches": 38
+  },
+  "Newcastle": {
+    "gf": 53,
+    "gs": 55,
+    "matches": 38
+  },
+  "Brighton": {
+    "gf": 52,
+    "gs": 46,
+    "matches": 38
+  },
+  "Fulham": {
+    "gf": 47,
+    "gs": 51,
+    "matches": 38
+  },
+  "Sunderland": {
+    "gf": 42,
+    "gs": 48,
+    "matches": 38
+  },
+  "West Ham": {
+    "gf": 46,
+    "gs": 65,
+    "matches": 38
+  },
+  "Tottenham": {
+    "gf": 48,
+    "gs": 57,
+    "matches": 38
+  },
+  "Burnley": {
+    "gf": 38,
+    "gs": 75,
+    "matches": 38
+  },
+  "Wolves": {
+    "gf": 27,
+    "gs": 68,
+    "matches": 38
+  },
+  "Man City": {
+    "gf": 77,
+    "gs": 35,
+    "matches": 38
+  },
+  "Chelsea": {
+    "gf": 58,
+    "gs": 52,
+    "matches": 38
+  },
+  "Crystal Palace": {
+    "gf": 41,
+    "gs": 51,
+    "matches": 38
+  },
+  "Nott'm Forest": {
+    "gf": 48,
+    "gs": 51,
+    "matches": 38
+  },
+  "Brentford": {
+    "gf": 55,
+    "gs": 52,
+    "matches": 38
+  },
+  "Man United": {
+    "gf": 69,
+    "gs": 50,
+    "matches": 38
+  },
+  "Arsenal": {
+    "gf": 71,
+    "gs": 27,
+    "matches": 38
+  },
+  "Leeds": {
+    "gf": 49,
+    "gs": 56,
+    "matches": 38
+  },
+  "Everton": {
+    "gf": 47,
+    "gs": 50,
+    "matches": 38
+  },
+  "Girona": {
+    "gf": 39,
+    "gs": 55,
+    "matches": 38
+  },
+  "Vallecano": {
+    "gf": 41,
+    "gs": 44,
+    "matches": 38
+  },
+  "Villarreal": {
+    "gf": 72,
+    "gs": 46,
+    "matches": 38
+  },
+  "Oviedo": {
+    "gf": 26,
+    "gs": 60,
+    "matches": 38
+  },
+  "Mallorca": {
+    "gf": 47,
+    "gs": 57,
+    "matches": 38
+  },
+  "Barcelona": {
+    "gf": 95,
+    "gs": 36,
+    "matches": 38
+  },
+  "Alaves": {
+    "gf": 44,
+    "gs": 56,
+    "matches": 38
+  },
+  "Levante": {
+    "gf": 47,
+    "gs": 61,
+    "matches": 38
+  },
+  "Valencia": {
+    "gf": 46,
+    "gs": 55,
+    "matches": 38
+  },
+  "Sociedad": {
+    "gf": 59,
+    "gs": 61,
+    "matches": 38
+  },
+  "Celta": {
+    "gf": 53,
+    "gs": 48,
+    "matches": 38
+  },
+  "Getafe": {
+    "gf": 32,
+    "gs": 38,
+    "matches": 38
+  },
+  "Ath Bilbao": {
+    "gf": 43,
+    "gs": 58,
+    "matches": 38
+  },
+  "Sevilla": {
+    "gf": 46,
+    "gs": 60,
+    "matches": 38
+  },
+  "Espanol": {
+    "gf": 43,
+    "gs": 55,
+    "matches": 38
+  },
+  "Ath Madrid": {
+    "gf": 62,
+    "gs": 44,
+    "matches": 38
+  },
+  "Elche": {
+    "gf": 49,
+    "gs": 57,
+    "matches": 38
+  },
+  "Betis": {
+    "gf": 59,
+    "gs": 48,
+    "matches": 38
+  },
+  "Real Madrid": {
+    "gf": 77,
+    "gs": 35,
+    "matches": 38
+  },
+  "Osasuna": {
+    "gf": 44,
+    "gs": 50,
+    "matches": 38
+  },
+  "Bayern Munich": {
+    "gf": 122,
+    "gs": 36,
+    "matches": 34
+  },
+  "RB Leipzig": {
+    "gf": 66,
+    "gs": 47,
+    "matches": 34
+  },
+  "Ein Frankfurt": {
+    "gf": 61,
+    "gs": 65,
+    "matches": 34
+  },
+  "Werder Bremen": {
+    "gf": 37,
+    "gs": 60,
+    "matches": 34
+  },
+  "Freiburg": {
+    "gf": 51,
+    "gs": 57,
+    "matches": 34
+  },
+  "Augsburg": {
+    "gf": 45,
+    "gs": 61,
+    "matches": 34
+  },
+  "Heidenheim": {
+    "gf": 41,
+    "gs": 72,
+    "matches": 34
+  },
+  "Wolfsburg": {
+    "gf": 45,
+    "gs": 69,
+    "matches": 34
+  },
+  "Leverkusen": {
+    "gf": 68,
+    "gs": 47,
+    "matches": 34
+  },
+  "Hoffenheim": {
+    "gf": 65,
+    "gs": 52,
+    "matches": 34
+  },
+  "Union Berlin": {
+    "gf": 44,
+    "gs": 58,
+    "matches": 34
+  },
+  "Stuttgart": {
+    "gf": 71,
+    "gs": 49,
+    "matches": 34
+  },
+  "St Pauli": {
+    "gf": 29,
+    "gs": 60,
+    "matches": 34
+  },
+  "Dortmund": {
+    "gf": 70,
+    "gs": 34,
+    "matches": 34
+  },
+  "Mainz": {
+    "gf": 44,
+    "gs": 53,
+    "matches": 34
+  },
+  "FC Koln": {
+    "gf": 49,
+    "gs": 63,
+    "matches": 34
+  },
+  "M'gladbach": {
+    "gf": 42,
+    "gs": 53,
+    "matches": 34
+  },
+  "Hamburg": {
+    "gf": 40,
+    "gs": 54,
+    "matches": 34
+  },
+  "Rennes": {
+    "gf": 59,
+    "gs": 50,
+    "matches": 34
+  },
+  "Marseille": {
+    "gf": 63,
+    "gs": 45,
+    "matches": 34
+  },
+  "Lens": {
+    "gf": 66,
+    "gs": 35,
+    "matches": 34
+  },
+  "Lyon": {
+    "gf": 53,
+    "gs": 40,
+    "matches": 34
+  },
+  "Monaco": {
+    "gf": 60,
+    "gs": 54,
+    "matches": 34
+  },
+  "Le Havre": {
+    "gf": 32,
+    "gs": 44,
+    "matches": 34
+  },
+  "Nice": {
+    "gf": 37,
+    "gs": 60,
+    "matches": 34
+  },
+  "Toulouse": {
+    "gf": 47,
+    "gs": 46,
+    "matches": 34
+  },
+  "Brest": {
+    "gf": 43,
+    "gs": 55,
+    "matches": 34
+  },
+  "Lille": {
+    "gf": 52,
+    "gs": 37,
+    "matches": 34
+  },
+  "Angers": {
+    "gf": 29,
+    "gs": 48,
+    "matches": 34
+  },
+  "Paris FC": {
+    "gf": 47,
+    "gs": 50,
+    "matches": 34
+  },
+  "Auxerre": {
+    "gf": 34,
+    "gs": 44,
+    "matches": 34
+  },
+  "Lorient": {
+    "gf": 48,
+    "gs": 51,
+    "matches": 34
+  },
+  "Metz": {
+    "gf": 32,
+    "gs": 76,
+    "matches": 34
+  },
+  "Strasbourg": {
+    "gf": 58,
+    "gs": 47,
+    "matches": 34
+  },
+  "Nantes": {
+    "gf": 29,
+    "gs": 52,
+    "matches": 34
+  },
+  "Paris SG": {
+    "gf": 74,
+    "gs": 29,
+    "matches": 34
+  },
+  "For Sittard": {
+    "gf": 49,
+    "gs": 63,
+    "matches": 34
+  },
+  "Go Ahead Eagles": {
+    "gf": 54,
+    "gs": 53,
+    "matches": 34
+  },
+  "Nijmegen": {
+    "gf": 77,
+    "gs": 53,
+    "matches": 34
+  },
+  "Excelsior": {
+    "gf": 43,
+    "gs": 56,
+    "matches": 34
+  },
+  "Feyenoord": {
+    "gf": 70,
+    "gs": 44,
+    "matches": 34
+  },
+  "NAC Breda": {
+    "gf": 35,
+    "gs": 58,
+    "matches": 34
+  },
+  "Heerenveen": {
+    "gf": 57,
+    "gs": 53,
+    "matches": 34
+  },
+  "Volendam": {
+    "gf": 35,
+    "gs": 55,
+    "matches": 34
+  },
+  "PSV Eindhoven": {
+    "gf": 101,
+    "gs": 45,
+    "matches": 34
+  },
+  "Sparta Rotterdam": {
+    "gf": 40,
+    "gs": 62,
+    "matches": 34
+  },
+  "Zwolle": {
+    "gf": 44,
+    "gs": 71,
+    "matches": 34
+  },
+  "Twente": {
+    "gf": 59,
+    "gs": 40,
+    "matches": 34
+  },
+  "Ajax": {
+    "gf": 62,
+    "gs": 41,
+    "matches": 34
+  },
+  "Telstar": {
+    "gf": 49,
+    "gs": 55,
+    "matches": 34
+  },
+  "AZ Alkmaar": {
+    "gf": 58,
+    "gs": 51,
+    "matches": 34
+  },
+  "Groningen": {
+    "gf": 49,
+    "gs": 45,
+    "matches": 34
+  },
+  "Utrecht": {
+    "gf": 55,
+    "gs": 42,
+    "matches": 34
+  },
+  "Heracles": {
+    "gf": 35,
+    "gs": 85,
+    "matches": 34
+  },
+  "Casa Pia": {
+    "gf": 31,
+    "gs": 57,
+    "matches": 34
+  },
+  "Sp Lisbon": {
+    "gf": 89,
+    "gs": 24,
+    "matches": 34
+  },
+  "Nacional": {
+    "gf": 37,
+    "gs": 45,
+    "matches": 34
+  },
+  "Gil Vicente": {
+    "gf": 47,
+    "gs": 38,
+    "matches": 34
+  },
+  "Arouca": {
+    "gf": 47,
+    "gs": 64,
+    "matches": 34
+  },
+  "AVS": {
+    "gf": 27,
+    "gs": 67,
+    "matches": 34
+  },
+  "Famalicao": {
+    "gf": 42,
+    "gs": 29,
+    "matches": 34
+  },
+  "Santa Clara": {
+    "gf": 32,
+    "gs": 41,
+    "matches": 34
+  },
+  "Moreirense": {
+    "gf": 37,
+    "gs": 49,
+    "matches": 34
+  },
+  "Alverca": {
+    "gf": 35,
+    "gs": 52,
+    "matches": 34
+  },
+  "Sp Braga": {
+    "gf": 64,
+    "gs": 36,
+    "matches": 34
+  },
+  "Tondela": {
+    "gf": 27,
+    "gs": 55,
+    "matches": 34
+  },
+  "Estoril": {
+    "gf": 54,
+    "gs": 57,
+    "matches": 34
+  },
+  "Estrela": {
+    "gf": 38,
+    "gs": 56,
+    "matches": 34
+  },
+  "Porto": {
+    "gf": 66,
+    "gs": 18,
+    "matches": 34
+  },
+  "Guimaraes": {
+    "gf": 39,
+    "gs": 51,
+    "matches": 34
+  },
+  "Benfica": {
+    "gf": 74,
+    "gs": 25,
+    "matches": 34
+  },
+  "Rio Ave": {
+    "gf": 35,
+    "gs": 57,
+    "matches": 34
+  },
+  "Gaziantep": {
+    "gf": 43,
+    "gs": 58,
+    "matches": 34
+  },
+  "Galatasaray": {
+    "gf": 77,
+    "gs": 30,
+    "matches": 34
+  },
+  "Samsunspor": {
+    "gf": 46,
+    "gs": 45,
+    "matches": 34
+  },
+  "Genclerbirligi": {
+    "gf": 36,
+    "gs": 47,
+    "matches": 34
+  },
+  "Antalyaspor": {
+    "gf": 33,
+    "gs": 55,
+    "matches": 34
+  },
+  "Kasimpasa": {
+    "gf": 33,
+    "gs": 49,
+    "matches": 34
+  },
+  "Rizespor": {
+    "gf": 46,
+    "gs": 52,
+    "matches": 34
+  },
+  "Goztep": {
+    "gf": 42,
+    "gs": 32,
+    "matches": 34
+  },
+  "Eyupspor": {
+    "gf": 33,
+    "gs": 48,
+    "matches": 34
+  },
+  "Konyaspor": {
+    "gf": 43,
+    "gs": 50,
+    "matches": 34
+  },
+  "Trabzonspor": {
+    "gf": 61,
+    "gs": 39,
+    "matches": 34
+  },
+  "Kocaelispor": {
+    "gf": 26,
+    "gs": 38,
+    "matches": 34
+  },
+  "Karagumruk": {
+    "gf": 31,
+    "gs": 54,
+    "matches": 34
+  },
+  "Alanyaspor": {
+    "gf": 41,
+    "gs": 41,
+    "matches": 34
+  },
+  "Fenerbahce": {
+    "gf": 77,
+    "gs": 37,
+    "matches": 34
+  },
+  "Besiktas": {
+    "gf": 59,
+    "gs": 40,
+    "matches": 34
+  },
+  "Buyuksehyr": {
+    "gf": 58,
+    "gs": 35,
+    "matches": 34
+  },
+  "Kayserispor": {
+    "gf": 27,
+    "gs": 62,
+    "matches": 34
+  },
+  "Aris": {
+    "gf": 34,
+    "gs": 32,
+    "matches": 32
+  },
+  "Volos NFC": {
+    "gf": 33,
+    "gs": 55,
+    "matches": 32
+  },
+  "Olympiakos": {
+    "gf": 51,
+    "gs": 17,
+    "matches": 32
+  },
+  "Asteras Tripolis": {
+    "gf": 36,
+    "gs": 49,
+    "matches": 36
+  },
+  "Panetolikos": {
+    "gf": 35,
+    "gs": 51,
+    "matches": 36
+  },
+  "Atromitos": {
+    "gf": 49,
+    "gs": 42,
+    "matches": 36
+  },
+  "AEK": {
+    "gf": 57,
+    "gs": 20,
+    "matches": 32
+  },
+  "Panserraikos": {
+    "gf": 25,
+    "gs": 73,
+    "matches": 36
+  },
+  "PAOK": {
+    "gf": 59,
+    "gs": 25,
+    "matches": 32
+  },
+  "Larisa": {
+    "gf": 34,
+    "gs": 56,
+    "matches": 36
+  },
+  "Levadeiakos": {
+    "gf": 63,
+    "gs": 47,
+    "matches": 32
+  },
+  "Kifisia": {
+    "gf": 40,
+    "gs": 51,
+    "matches": 36
+  },
+  "OFI Crete": {
+    "gf": 43,
+    "gs": 55,
+    "matches": 32
+  },
+  "Panathinaikos": {
+    "gf": 47,
+    "gs": 33,
+    "matches": 32
+  }
+}

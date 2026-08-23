@@ -11,11 +11,27 @@ const ODDS_API_KEYS = [
   "f4dc183f73651f7c16ce8156003ea00d"
 ];
 let currentKeyIndex = 0;
+const exhaustedKeys = new Set(); // Chiavi esaurite questo ciclo
 
 function getNextApiKey() {
-  const key = ODDS_API_KEYS[currentKeyIndex];
-  currentKeyIndex = (currentKeyIndex + 1) % ODDS_API_KEYS.length;
-  return key;
+  // Se tutte esaurite, resetta e riprova
+  if (exhaustedKeys.size >= ODDS_API_KEYS.length) {
+    exhaustedKeys.clear();
+  }
+  // Trova prossima chiave non esaurita
+  let attempts = 0;
+  while (attempts < ODDS_API_KEYS.length) {
+    const key = ODDS_API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % ODDS_API_KEYS.length;
+    if (!exhaustedKeys.has(key)) return key;
+    attempts++;
+  }
+  return ODDS_API_KEYS[0]; // Fallback
+}
+
+function markKeyExhausted(key) {
+  exhaustedKeys.add(key);
+  console.log(`API key esaurita: ${key.substring(0,8)}... (${exhaustedKeys.size}/${ODDS_API_KEYS.length})`);
 }
 
 const CACHE_DIR = path.join(__dirname, "cache");
@@ -89,9 +105,89 @@ const HISTORICAL_URLS = {
   "soccer_greece_super_league": "https://www.football-data.co.uk/mmz4281/2526/G1.csv",
 };
 
+const HISTORICAL_CACHE_FILE = path.join(CACHE_DIR, "historical_2526.json");
+const CURRENT_SEASON_FILE = path.join(CACHE_DIR, "results_2627.json");
+
+// JSONBin.io per persistenza su Render
+const JSONBIN_MASTER_KEY = "$2a$10$4NQMazkf59A5YomP2CVc5uEQrfpb6rDejj5yY7KbtakMMSd350tSm";
+let JSONBIN_BIN_ID = null;
+
+// Funzioni JSONBin.io
+async function loadFromJsonBin() {
+  try {
+    // Prima cerca bin esistente
+    const listRes = await fetch("https://api.jsonbin.io/v3/c/uncategorized/bins", {
+      headers: { "X-Master-Key": JSONBIN_MASTER_KEY }
+    });
+    if (listRes.ok) {
+      const bins = await listRes.json();
+      const existing = bins.find(b => b.snippetMeta?.name === "bet-analyzer-results-2627");
+      if (existing) {
+        JSONBIN_BIN_ID = existing.record;
+        const dataRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+          headers: { "X-Master-Key": JSONBIN_MASTER_KEY }
+        });
+        if (dataRes.ok) {
+          const data = await dataRes.json();
+          console.log(`JSONBin caricato: ${Object.keys(data.record?.matches || {}).length} partite`);
+          return data.record;
+        }
+      }
+    }
+  } catch (e) {
+    console.log("JSONBin load error:", e.message);
+  }
+  return { matches: {}, stats: {} };
+}
+
+async function saveToJsonBin(data) {
+  try {
+    if (!JSONBIN_BIN_ID) {
+      // Crea nuovo bin
+      const res = await fetch("https://api.jsonbin.io/v3/b", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": JSONBIN_MASTER_KEY,
+          "X-Bin-Name": "bet-analyzer-results-2627"
+        },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        const result = await res.json();
+        JSONBIN_BIN_ID = result.metadata.id;
+        console.log("JSONBin creato:", JSONBIN_BIN_ID);
+      }
+    } else {
+      // Aggiorna bin esistente
+      await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": JSONBIN_MASTER_KEY
+        },
+        body: JSON.stringify(data)
+      });
+      console.log("JSONBin aggiornato");
+    }
+  } catch (e) {
+    console.log("JSONBin save error:", e.message);
+  }
+}
+
 // Carica dati storici da Football-Data.co.uk
 async function loadHistoricalData() {
-  console.log("Caricamento dati storici...");
+  // Controlla se esiste cache locale dei dati storici 2025/26
+  if (fs.existsSync(HISTORICAL_CACHE_FILE)) {
+    console.log("Caricamento dati storici da cache locale...");
+    const cached = JSON.parse(fs.readFileSync(HISTORICAL_CACHE_FILE, "utf8"));
+    console.log(`Cache: ${Object.keys(cached).length} squadre caricate`);
+    // Carica anche risultati recenti da The Odds API
+    await loadRecentResults(cached);
+    return cached;
+  }
+  
+  console.log("Primo avvio: fetch dati storici 2025/26 da Football-Data...");
   const stats = {};
   
   for (const [league, url] of Object.entries(HISTORICAL_URLS)) {
@@ -137,25 +233,62 @@ async function loadHistoricalData() {
     }
   }
   
+  // Salva in cache locale
+  fs.writeFileSync(HISTORICAL_CACHE_FILE, JSON.stringify(stats, null, 2));
+  console.log(`Cache dati storici salvata: ${HISTORICAL_CACHE_FILE}`);
+  
   // Carica anche risultati recenti da The Odds API
   await loadRecentResults(stats);
   
   return stats;
 }
 
-// Carica risultati recenti da The Odds API (usa key a rotazione)
-async function loadRecentResults(stats) {
-  console.log("Caricamento risultati recenti...");
+// Dati stagione corrente (globale per peso dinamico)
+let currentSeasonStats = {};
+let currentSeasonResults = { matches: {}, stats: {} };
+
+// Carica risultati da JSONBin (solo lettura, no API)
+async function loadRecentResults(historicalStats) {
+  currentSeasonResults = await loadFromJsonBin();
+  currentSeasonStats = currentSeasonResults.stats || {};
+  
+  console.log(`Caricati da JSONBin: ${Object.keys(currentSeasonResults.matches).length} partite, ${Object.keys(currentSeasonStats).length} squadre`);
+  
+  // Log peso dinamico
+  const avgMatches = Object.values(currentSeasonStats).reduce((sum, s) => sum + s.matches, 0) / Math.max(1, Object.keys(currentSeasonStats).length);
+  const weightCurrent = Math.min(1, avgMatches / WEIGHT_THRESHOLD) * 100;
+  console.log(`Peso dinamico: ${weightCurrent.toFixed(0)}% stagione corrente, ${(100 - weightCurrent).toFixed(0)}% storico (media ${avgMatches.toFixed(1)} partite/squadra)`);
+}
+
+// Fetch risultati da API e aggiorna JSONBin (chiamato solo da verifica schedine)
+async function fetchAndSaveResults() {
+  console.log("Fetch risultati da API...");
+  let newMatches = 0;
+  
   for (const league of LEAGUES) {
     try {
-      const apiKey = getNextApiKey();
-      const url = `https://api.the-odds-api.com/v4/sports/${league.key}/scores/?apiKey=${apiKey}&daysFrom=3`;
-      const res = await fetch(url);
+      let apiKey = getNextApiKey();
+      let url = `https://api.the-odds-api.com/v4/sports/${league.key}/scores/?apiKey=${apiKey}&daysFrom=3`;
+      let res = await fetch(url);
+      
+      // Se 401, marca chiave esaurita e riprova con altra
+      if (res.status === 401) {
+        markKeyExhausted(apiKey);
+        apiKey = getNextApiKey();
+        url = `https://api.the-odds-api.com/v4/sports/${league.key}/scores/?apiKey=${apiKey}&daysFrom=3`;
+        res = await fetch(url);
+        if (res.status === 401) {
+          markKeyExhausted(apiKey);
+          continue; // Tutte esaurite per ora
+        }
+      }
+      
       if (!res.ok) continue;
       const data = await res.json();
       
       for (const match of data) {
         if (!match.completed || !match.scores) continue;
+        if (currentSeasonResults.matches[match.id]) continue;
         
         const homeTeam = match.home_team;
         const awayTeam = match.away_team;
@@ -166,22 +299,91 @@ async function loadRecentResults(stats) {
         const homeGoals = parseInt(homeScore.score);
         const awayGoals = parseInt(awayScore.score);
         
-        // Inizializza e aggiorna stats
-        if (!stats[homeTeam]) stats[homeTeam] = { gf: 0, gs: 0, matches: 0 };
-        if (!stats[awayTeam]) stats[awayTeam] = { gf: 0, gs: 0, matches: 0 };
+        currentSeasonResults.matches[match.id] = { home: homeTeam, away: awayTeam, homeGoals, awayGoals, date: match.commence_time, league: league.name, flag: league.flag };
         
-        stats[homeTeam].gf += homeGoals;
-        stats[homeTeam].gs += awayGoals;
-        stats[homeTeam].matches++;
+        if (!currentSeasonStats[homeTeam]) currentSeasonStats[homeTeam] = { gf: 0, gs: 0, matches: 0 };
+        if (!currentSeasonStats[awayTeam]) currentSeasonStats[awayTeam] = { gf: 0, gs: 0, matches: 0 };
         
-        stats[awayTeam].gf += awayGoals;
-        stats[awayTeam].gs += homeGoals;
-        stats[awayTeam].matches++;
+        currentSeasonStats[homeTeam].gf += homeGoals;
+        currentSeasonStats[homeTeam].gs += awayGoals;
+        currentSeasonStats[homeTeam].matches++;
+        currentSeasonStats[awayTeam].gf += awayGoals;
+        currentSeasonStats[awayTeam].gs += homeGoals;
+        currentSeasonStats[awayTeam].matches++;
+        
+        newMatches++;
       }
     } catch (e) {
       console.log(`Errore risultati ${league.key}: ${e.message}`);
     }
   }
+  
+  if (newMatches > 0) {
+    currentSeasonResults.stats = currentSeasonStats;
+    await saveToJsonBin(currentSeasonResults);
+    console.log(`Salvate ${newMatches} nuove partite su JSONBin.io`);
+  }
+  
+  return newMatches;
+}
+
+// Calcola stats con peso dinamico (15 partite = 100% stagione corrente)
+const WEIGHT_THRESHOLD = 15;
+
+function getWeightedStats(teamName) {
+  const normalized = normalizeTeamName(teamName);
+  let historical = null, current = null;
+  
+  // Cerca in storico
+  for (const [name, stats] of Object.entries(teamStats)) {
+    if (normalizeTeamName(name) === normalized || normalizeTeamName(name).includes(normalized) || normalized.includes(normalizeTeamName(name))) {
+      historical = stats;
+      break;
+    }
+  }
+  
+  // Cerca in stagione corrente
+  for (const [name, stats] of Object.entries(currentSeasonStats)) {
+    if (normalizeTeamName(name) === normalized || normalizeTeamName(name).includes(normalized) || normalized.includes(normalizeTeamName(name))) {
+      current = stats;
+      break;
+    }
+  }
+  
+  // Se non ha dati correnti, usa solo storico
+  if (!current || current.matches === 0) {
+    return historical || { gf: 0, gs: 0, matches: 0 };
+  }
+  
+  // Se ha >= 15 partite correnti, usa solo corrente
+  if (current.matches >= WEIGHT_THRESHOLD) {
+    return current;
+  }
+  
+  // Altrimenti combina con peso dinamico
+  if (!historical || historical.matches === 0) {
+    return current;
+  }
+  
+  const weightCurrent = current.matches / WEIGHT_THRESHOLD;
+  const weightHistorical = 1 - weightCurrent;
+  
+  // Media pesata per partita
+  const avgGfCurrent = current.gf / current.matches;
+  const avgGsCurrent = current.gs / current.matches;
+  const avgGfHistorical = historical.gf / historical.matches;
+  const avgGsHistorical = historical.gs / historical.matches;
+  
+  const avgGf = avgGfCurrent * weightCurrent + avgGfHistorical * weightHistorical;
+  const avgGs = avgGsCurrent * weightCurrent + avgGsHistorical * weightHistorical;
+  
+  // Ritorna stats "virtuali" normalizzate
+  return {
+    gf: avgGf * current.matches,
+    gs: avgGs * current.matches,
+    matches: current.matches,
+    weightInfo: { current: (weightCurrent * 100).toFixed(0) + '%', historical: (weightHistorical * 100).toFixed(0) + '%' }
+  };
 }
 
 // Normalizza nome squadra per matching
@@ -193,18 +395,9 @@ function normalizeTeamName(name) {
     .trim();
 }
 
-// Trova stats squadra
+// Trova stats squadra (usa peso dinamico)
 function findTeamStats(teamName) {
-  const normalized = normalizeTeamName(teamName);
-  
-  // Cerca match esatto o parziale
-  for (const [name, stats] of Object.entries(teamStats)) {
-    const normName = normalizeTeamName(name);
-    if (normName === normalized || normName.includes(normalized) || normalized.includes(normName)) {
-      return stats;
-    }
-  }
-  return null;
+  return getWeightedStats(teamName);
 }
 
 // Calcola lambda basato su dati reali
@@ -243,7 +436,7 @@ function getLambda(casa, ospite) {
 const LEAGUES = [
   { key: "soccer_italy_serie_a", name: "Italia | Serie A", isTop5: true, flag: "🇮🇹" },
   { key: "soccer_italy_serie_b", name: "Italia | Serie B", isTop5: false, flag: "🇮🇹" },
-  { key: "soccer_epl", name: "Inghilterra | Premier League", isTop5: true, flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { key: "soccer_epl", name: "Inghilterra | Premier League", isTop5: true, flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿󠁧󠁢󠁥󠁮󠁧󠁿" },
   { key: "soccer_spain_la_liga", name: "Spagna | Liga", isTop5: true, flag: "🇪🇸" },
   { key: "soccer_germany_bundesliga", name: "Germania | Bundesliga", isTop5: true, flag: "🇩🇪" },
   { key: "soccer_france_ligue_one", name: "Francia | Ligue 1", isTop5: true, flag: "🇫🇷" },
@@ -257,7 +450,7 @@ const LEAGUES = [
 const LEAGUE_FLAGS = {
   "Italia | Serie A": "🇮🇹",
   "Italia | Serie B": "🇮🇹",
-  "Inghilterra | Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "Inghilterra | Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿󠁧󠁢󠁥󠁮󠁧󠁿",
   "Spagna | Liga": "🇪🇸",
   "Germania | Bundesliga": "🇩🇪",
   "Francia | Ligue 1": "🇫🇷",
@@ -677,6 +870,9 @@ app.post("/api/verifica-schedina", express.json(), async (req, res) => {
   const { partite } = req.body;
   if (!partite || !partite.length) return res.json({ risultati: [] });
   
+  // Aggiorna risultati stagione corrente su JSONBin
+  await fetchAndSaveResults();
+  
   const risultati = [];
   const legheUniche = new Set();
   
@@ -742,26 +938,52 @@ app.post("/api/verifica-schedina", express.json(), async (req, res) => {
 });
 
 app.get("/api/risultati", async (req, res) => {
-  const scores = [];
-  for (const league of LEAGUES) {
-    try {
-      const apiKey = getNextApiKey();
-      const url = `https://api.the-odds-api.com/v4/sports/${league.key}/scores/?apiKey=${apiKey}&daysFrom=2`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        for (const match of data) {
-          if (match.completed) {
-            scores.push({ ...match, league: league.name, flag: league.flag });
-          }
-        }
-      }
-    } catch (e) {
-      console.log(`Errore risultati ${league.key}: ${e.message}`);
-    }
-  }
-  scores.sort((a, b) => new Date(b.commence_time) - new Date(a.commence_time));
-  res.json({ scores, timestamp: new Date().toISOString() });
+  const savedMatches = Object.values(currentSeasonResults.matches || {});
+  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const recentMatches = savedMatches
+    .filter(m => new Date(m.date).getTime() > threeDaysAgo)
+    .map(m => ({
+      id: m.home + '-' + m.away,
+      home_team: m.home,
+      away_team: m.away,
+      scores: [
+        { name: m.home, score: String(m.homeGoals) },
+        { name: m.away, score: String(m.awayGoals) }
+      ],
+      commence_time: m.date,
+      completed: true,
+      league: m.league || 'Sconosciuto',
+      flag: m.flag || '⚽'
+    }))
+    .sort((a, b) => new Date(b.commence_time) - new Date(a.commence_time));
+  
+  res.json({ scores: recentMatches, timestamp: new Date().toISOString(), source: 'cache' });
+});
+
+// Endpoint che chiama API e aggiorna JSONBin
+app.get("/api/risultati-refresh", async (req, res) => {
+  const newMatches = await fetchAndSaveResults();
+  
+  const savedMatches = Object.values(currentSeasonResults.matches || {});
+  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const recentMatches = savedMatches
+    .filter(m => new Date(m.date).getTime() > threeDaysAgo)
+    .map(m => ({
+      id: m.home + '-' + m.away,
+      home_team: m.home,
+      away_team: m.away,
+      scores: [
+        { name: m.home, score: String(m.homeGoals) },
+        { name: m.away, score: String(m.awayGoals) }
+      ],
+      commence_time: m.date,
+      completed: true,
+      league: m.league || 'Sconosciuto',
+      flag: m.flag || '⚽'
+    }))
+    .sort((a, b) => new Date(b.commence_time) - new Date(a.commence_time));
+  
+  res.json({ scores: recentMatches, timestamp: new Date().toISOString(), source: 'api', newMatches });
 });
 
 app.get("/favicon.png", (req, res) => {
@@ -821,16 +1043,16 @@ th{color:#94a3b8}
 .sch-sim{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px;background:#334155;border-radius:6px;font-size:.85em}
 .sch-puntata{width:60px;padding:4px;border-radius:4px;border:none;background:#1e293b;color:#e2e8f0;text-align:center}
 .sch-vincita{color:#22c55e;font-weight:bold;margin-left:auto}
-.mie-sch{background:#334155;border-radius:8px;margin-bottom:8px;overflow:hidden}
-.mie-sch-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer}
+.mie-sch{background:#334155;border-radius:8px;margin-bottom:10px;overflow:hidden;width:100%}
+.mie-sch-header{display:flex;justify-content:space-between;align-items:center;padding:12px;cursor:pointer}
 .mie-sch-header:hover{background:#475569}
-.mie-sch-nome{font-weight:bold}
+.mie-sch-nome{font-weight:bold;font-size:.95em}
 .mie-sch-stato{font-size:.9em}
-.mie-sch-body{display:none;padding:10px 12px;background:#1e293b;border-top:1px solid #475569}
+.mie-sch-body{display:none;padding:12px;background:#1e293b;border-top:1px solid #475569}
 .mie-sch-body.open{display:block}
-.mie-sch-bet{padding:6px 0;border-bottom:1px solid #334155;font-size:.85em}
+.mie-sch-bet{padding:8px 0;border-bottom:1px solid #334155;font-size:.85em;word-break:break-word}
 .mie-sch-bet:last-child{border-bottom:none}
-.mie-sch-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #334155}
+.mie-sch-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #334155;gap:10px;flex-wrap:wrap}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;visibility:hidden;transition:all .2s}
 .modal-overlay.show{opacity:1;visibility:visible}
 .modal{background:#1e293b;border-radius:12px;padding:20px;max-width:90%;width:320px;text-align:center;transform:scale(.9);transition:transform .2s}
@@ -851,16 +1073,30 @@ th{color:#94a3b8}
 .badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:.7em;margin-left:4px;background:#f59e0b;color:#000}
 .filters{margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap}
 .filters select{padding:8px;border-radius:6px;background:#334155;color:#e2e8f0;border:none}
-.mia-schedina{position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-top:2px solid #3b82f6;padding:12px 15px;z-index:100;display:none}
-.mia-schedina.active{display:block}
-.mia-schedina h3{color:#3b82f6;font-size:1em;margin-bottom:8px}
-.mia-schedina-list{max-height:120px;overflow-y:auto;margin-bottom:8px}
-.mia-schedina-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #334155;font-size:.85em}
-.mia-schedina-item .remove{color:#ef4444;cursor:pointer;margin-left:8px}
-.mia-schedina-footer{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
-.mia-schedina-footer input{width:70px;padding:6px;border-radius:4px;border:none;background:#334155;color:#e2e8f0;text-align:center}
-.mia-schedina-footer .quota-tot{color:#22c55e;font-size:1.2em;font-weight:bold}
-.mia-schedina-footer .vincita{color:#f59e0b;font-size:1.1em}
+.schedina-fab{position:fixed;bottom:20px;right:20px;background:#3b82f6;color:#fff;border:none;padding:12px 18px;border-radius:50px;font-size:1em;font-weight:bold;cursor:pointer;z-index:100;display:none;box-shadow:0 4px 15px rgba(59,130,246,.5);animation:pulse 2s infinite}
+.schedina-fab.active{display:flex;align-items:center;gap:8px}
+.schedina-fab .count{background:#fff;color:#3b82f6;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.85em}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.schedina-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.schedina-modal.show{display:flex}
+.schedina-modal-content{background:#1e293b;width:100%;max-width:500px;max-height:80vh;border-radius:20px 20px 0 0;padding:20px;overflow-y:auto}
+.schedina-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.schedina-modal-header h3{color:#3b82f6;margin:0}
+.schedina-modal-close{background:none;border:none;color:#94a3b8;font-size:1.5em;cursor:pointer}
+.schedina-modal-list{margin-bottom:15px}
+.schedina-modal-item{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#334155;border-radius:8px;margin-bottom:8px}
+.schedina-modal-item .info{flex:1}
+.schedina-modal-item .partita{font-size:.85em;color:#94a3b8}
+.schedina-modal-item .esito{font-weight:bold;color:#e2e8f0}
+.schedina-modal-item .quota{color:#22c55e;font-weight:bold;margin-left:10px}
+.schedina-modal-item .remove{color:#ef4444;cursor:pointer;padding:5px 10px}
+.schedina-modal-footer{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:15px;border-top:1px solid #334155}
+.schedina-modal-footer input{width:70px;padding:8px;border-radius:6px;border:none;background:#334155;color:#e2e8f0;text-align:center}
+.schedina-modal-footer .totals{flex:1;text-align:right}
+.schedina-modal-footer .quota-tot{color:#22c55e;font-size:1.3em;font-weight:bold}
+.schedina-modal-footer .vincita{color:#f59e0b;display:block;font-size:.9em}
+.schedina-modal-actions{display:flex;gap:10px;margin-top:15px}
+.schedina-modal-actions .btn{flex:1;padding:12px;font-size:1em}
 .esito-btn{padding:4px 8px;margin:2px;border-radius:4px;border:none;cursor:pointer;font-size:.75em;background:#475569;color:#e2e8f0;transition:all .2s}
 .esito-btn:hover{background:#3b82f6}
 .esito-btn.selected{background:#22c55e;color:#000}
@@ -875,10 +1111,7 @@ th{color:#94a3b8}
   th,td{padding:4px 2px}
   .card{padding:10px}
   .filters select{padding:6px;font-size:.75em;max-width:100px}
-  .mia-schedina{padding:10px}
-  .mia-schedina-item{font-size:.75em}
-  .mia-schedina-footer{gap:8px;font-size:.85em}
-  .mia-schedina-footer input{width:55px;padding:5px}
+  .schedina-fab{bottom:15px;right:15px;padding:10px 14px;font-size:.9em}
   .btn{padding:6px 12px;font-size:.8em}
   #t1 table{display:none}
   .mobile-cards{display:block}
@@ -891,6 +1124,11 @@ th{color:#94a3b8}
   .match-card-stat{background:#1e293b;padding:6px;border-radius:4px;text-align:center;font-size:.75em}
   .match-card-stat b{display:block;color:#38bdf8;font-size:.9em}
   .match-card-sug{background:#166534;padding:8px;border-radius:6px;margin-top:8px;font-size:.85em}
+  .match-card-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #475569}
+  .match-card-detail.open{display:block}
+  .match-card-bets{display:flex;flex-direction:column;gap:6px}
+  .match-card-bet{display:flex;justify-content:space-between;align-items:center;background:#1e293b;padding:10px;border-radius:6px;cursor:pointer}
+  .match-card-bet:hover{background:#3b82f6}
 }
 </style></head><body>
 <h1>🎯 Bet Analyzer</h1>
@@ -912,14 +1150,14 @@ ${(d.campionatiUnici || []).map(c => `<option value="${c}">${c}</option>`).join(
 <div class="tabs">
 <div class="tab active" onclick="show(0)">💎 Value (${d.valueBets.length})</div>
 <div class="tab" onclick="show(1)">⚽ Partite</div>
-<div class="tab" onclick="show(2)">🎫 Schedine (${(d.schedine || []).length})</div>
+<div class="tab" onclick="show(2)">🎫 Schedine <span id="schedineTabCount">(${(d.schedine || []).length})</span></div>
 <div class="tab" onclick="show(3)">📊 Live</div>
 </div>
 <div id="t0" class="card">
 <h2>💎 Value Bets</h2>
 <p class="sm" style="margin-bottom:10px">Value = prob. modello - prob. bookmaker | 🟢 3-15% affidabile | 🟠 >15% verificare ⚠️</p>
 ${d.valueBets.length ? (() => {
-  const flags = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"};
+  const flags = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"};
   let html = '';
   let lastDate = '';
   d.valueBets.slice(0, 30).forEach(v => {
@@ -947,7 +1185,7 @@ ${d.valueBets.length ? (() => {
 </div>
 <table><tr><th>Partita</th><th>📅</th><th>Gol Attesi</th><th>1 / X / 2</th><th>O2.5 / U2.5</th><th>GG / NG</th><th>🎯 Gioca</th></tr>
 ${d.partite.map(p => {
-  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[p.campionato] || "⚽";
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[p.campionato] || "⚽";
   const sug = p.suggerimento;
   const valueLabel = sug?.hasValue ? ' <span style="background:#22c55e;color:#000;padding:1px 4px;border-radius:3px;font-size:.7em">VALUE +'+sug.value?.toFixed(0)+'%</span>' : '';
   const sugCell = sug ? '<span class="val">'+sug.tipo+'</span> @'+sug.quota?.toFixed(2)+valueLabel+'<br><span class="sm">'+sug.prob?.toFixed(0)+'%</span>' : '<span class="sm">-</span>';
@@ -956,74 +1194,86 @@ ${d.partite.map(p => {
   const analisiHtml = mainAnalisi.map(a => {
     const isBest = sug && a.tipo === sug.tipo;
     const isGood = a.value > 2 && a.prob > 45;
-    const partitaSafe = p.partita.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const tipoSafe = a.tipo.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    return '<div style="background:'+(isBest ? '#166534' : isGood ? '#1e3a5f' : '#334155')+';padding:8px;border-radius:6px;text-align:center;min-width:80px"><div style="font-weight:bold;color:'+(isBest ? '#4ade80' : '#e2e8f0')+'">'+a.tipo+'</div><div style="color:#38bdf8">@'+a.quota?.toFixed(2)+'</div><div class="sm">Mod '+a.prob?.toFixed(0)+'%</div><div style="color:'+(a.value > 0 ? '#22c55e' : '#ef4444')+'">'+(a.value > 0 ? '+' : '')+a.value?.toFixed(0)+'%</div><button class="esito-btn" onclick="event.stopPropagation();addToSchedina(\''+p.id+'\',\''+partitaSafe+'\',\''+tipoSafe+'\','+a.quota+')">+ Aggiungi</button></div>';
+    const partitaSafe = p.partita.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    const tipoSafe = a.tipo.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    return '<div style="background:'+(isBest ? '#166534' : isGood ? '#1e3a5f' : '#334155')+';padding:8px;border-radius:6px;text-align:center;min-width:80px"><div style="font-weight:bold;color:'+(isBest ? '#4ade80' : '#e2e8f0')+'">'+a.tipo+'</div><div style="color:#38bdf8">@'+a.quota?.toFixed(2)+'</div><div class="sm">Mod '+a.prob?.toFixed(0)+'%</div><div style="color:'+(a.value > 0 ? '#22c55e' : '#ef4444')+'">'+(a.value > 0 ? '+' : '')+a.value?.toFixed(0)+'%</div><button class="esito-btn" onclick="event.stopPropagation();addToSchedina(&#39;'+p.id+'&#39;,&#39;'+partitaSafe+'&#39;,&#39;'+tipoSafe+'&#39;,'+a.quota+',&#39;'+p.orario+'&#39;)">+ Aggiungi</button></div>';
   }).join('');
-  const extraHtml = extraAnalisi.length ? '<div style="margin-top:8px"><button class="esito-btn" onclick="event.stopPropagation();toggleExtra(\''+p.id+'\')" style="background:#6366f1">📊 More ('+extraAnalisi.length+')</button><div id="extra-'+p.id+'" class="hide" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px">'+extraAnalisi.map(a => {
-    const partitaSafe = p.partita.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const tipoSafe = a.tipo.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  const extraHtml = extraAnalisi.length ? '<div style="margin-top:8px"><button class="esito-btn" onclick="event.stopPropagation();toggleExtra(&#39;'+p.id+'&#39;)" style="background:#6366f1">📊 More ('+extraAnalisi.length+')</button><div id="extra-'+p.id+'" class="hide" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px">'+extraAnalisi.map(a => {
+    const partitaSafe = p.partita.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    const tipoSafe = a.tipo.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
     const probText = a.prob ? 'Mod '+a.prob?.toFixed(0)+'%' : 'Handicap';
-    return '<div style="background:#4c1d95;padding:8px;border-radius:6px;text-align:center;min-width:80px"><div style="font-weight:bold;color:#c4b5fd">'+a.tipo+'</div><div style="color:#38bdf8">@'+a.quota?.toFixed(2)+'</div><div class="sm">'+probText+'</div><button class="esito-btn" onclick="event.stopPropagation();addToSchedina(\''+p.id+'\',\''+partitaSafe+'\',\''+tipoSafe+'\','+a.quota+')">+ Aggiungi</button></div>';
+    return '<div style="background:#4c1d95;padding:8px;border-radius:6px;text-align:center;min-width:80px"><div style="font-weight:bold;color:#c4b5fd">'+a.tipo+'</div><div style="color:#38bdf8">@'+a.quota?.toFixed(2)+'</div><div class="sm">'+probText+'</div><button class="esito-btn" onclick="event.stopPropagation();addToSchedina(&#39;'+p.id+'&#39;,&#39;'+partitaSafe+'&#39;,&#39;'+tipoSafe+'&#39;,'+a.quota+',&#39;'+p.orario+'&#39;)">+ Aggiungi</button></div>';
   }).join('')+'</div></div>' : '';
   const sugBoxColor = sug?.hasValue ? '#166534' : '#1e3a5f';
   const sugBoxValue = sug?.hasValue ? ' | <b style="color:#4ade80">VALUE +'+sug.value?.toFixed(1)+'%</b>' : '';
   const sugBox = sug ? '<div style="margin-top:8px;padding:8px;background:'+sugBoxColor+';border-radius:6px">🎯 <b>'+sug.tipo+'</b> @'+sug.quota?.toFixed(2)+' | Modello '+sug.prob?.toFixed(0)+'%'+sugBoxValue+'</div>' : '';
-  return '<tr class="match-row '+(p.isTop5 ? "top5" : "")+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'" style="cursor:pointer" onclick="toggleAnalisi(\''+p.id+'\')"><td>'+flag+' '+p.partita+(p.isTop5 ? '<span class="badge">TOP5</span>' : "")+(p.hasData ? '<span class="badge" style="background:#22c55e">📊</span>' : '')+'<br><span class="sm">'+p.campionato+'</span></td><td class="sm">'+p.orario+'</td><td>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</td><td>'+p.modello.p1?.toFixed(0)+'% / '+p.modello.pX?.toFixed(0)+'% / '+p.modello.p2?.toFixed(0)+'%</td><td>'+p.modello.over?.toFixed(0)+'% / '+p.modello.under?.toFixed(0)+'%</td><td>'+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</td><td>'+sugCell+'</td></tr><tr id="analisi-'+p.id+'" class="hide"><td colspan="7" style="background:#0f172a;padding:12px"><div style="display:flex;flex-wrap:wrap;gap:6px">'+analisiHtml+'</div>'+extraHtml+sugBox+'</td></tr>';
+  return '<tr class="match-row '+(p.isTop5 ? "top5" : "")+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'" style="cursor:pointer" onclick="toggleAnalisi(&#39;'+p.id+'&#39;)"><td>'+flag+' '+p.partita+(p.isTop5 ? '<span class="badge">TOP5</span>' : "")+(p.hasData ? '<span class="badge" style="background:#22c55e">📊</span>' : '')+'<br><span class="sm">'+p.campionato+'</span></td><td class="sm">'+p.orario+'</td><td>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</td><td>'+p.modello.p1?.toFixed(0)+'% / '+p.modello.pX?.toFixed(0)+'% / '+p.modello.p2?.toFixed(0)+'%</td><td>'+p.modello.over?.toFixed(0)+'% / '+p.modello.under?.toFixed(0)+'%</td><td>'+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</td><td>'+sugCell+'</td></tr><tr id="analisi-'+p.id+'" class="hide"><td colspan="7" style="background:#0f172a;padding:12px"><div style="display:flex;flex-wrap:wrap;gap:6px">'+analisiHtml+'</div>'+extraHtml+sugBox+'</td></tr>';
 }).join("")}</table>
 <div class="mobile-cards">
 ${d.partite.map(p => {
-  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[p.campionato] || "⚽";
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[p.campionato] || "⚽";
   const sug = p.suggerimento;
   const ora = p.orario?.split(',')[1]?.trim() || p.orario;
+  const partitaSafe = p.partita.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
   const sugHtml = sug ? '<div class="match-card-sug">🎯 <b>'+sug.tipo+'</b> @'+sug.quota?.toFixed(2)+' | '+sug.prob?.toFixed(0)+'%'+(sug.hasValue ? ' <span style="color:#4ade80">VALUE +'+sug.value?.toFixed(0)+'%</span>' : '')+'</div>' : '';
-  return '<div class="match-card '+(p.isTop5 ? 'top5' : '')+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'"><div class="match-card-header"><div><div class="match-card-teams">'+flag+' '+p.partita+'</div><div class="match-card-info">'+p.campionato+(p.isTop5 ? ' • TOP5' : '')+'</div></div><div style="text-align:right"><div style="color:#38bdf8;font-weight:bold">'+ora+'</div></div></div><div class="match-card-stats"><div class="match-card-stat">⚽ Gol Attesi<b>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</b></div><div class="match-card-stat">1X2<b>'+p.modello.p1?.toFixed(0)+'/'+p.modello.pX?.toFixed(0)+'/'+p.modello.p2?.toFixed(0)+'</b></div><div class="match-card-stat">O/U 2.5<b>'+p.modello.over?.toFixed(0)+'/'+p.modello.under?.toFixed(0)+'</b></div></div><div style="font-size:.8em;color:#94a3b8">GG/NG: '+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</div>'+sugHtml+'</div>';
+  const analisiHtml = (p.analisi||[]).filter(a => !a.isExtra).map(a => {
+    const tipoSafe = a.tipo.replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+    return '<div class="match-card-bet" onclick="event.stopPropagation();addToSchedina(&#39;'+p.id+'&#39;,&#39;'+partitaSafe+'&#39;,&#39;'+tipoSafe+'&#39;,'+a.quota+',&#39;'+p.orario+'&#39;)"><span><b>'+a.tipo+'</b> @'+a.quota?.toFixed(2)+'</span><span>'+a.prob?.toFixed(0)+'% <span style="color:'+(a.value>0?'#22c55e':'#ef4444')+'">'+(a.value>0?'+':'')+a.value?.toFixed(0)+'%</span></span></div>';
+  }).join('');
+  return '<div class="match-card '+(p.isTop5 ? 'top5' : '')+'" data-data="'+p.data+'" data-camp="'+p.campionato+'" data-top5="'+p.isTop5+'" onclick="toggleCardDetail(&#39;card-'+p.id+'&#39;)">' +
+    '<div class="match-card-header"><div><div class="match-card-teams">'+flag+' '+p.partita+'</div><div class="match-card-info">'+p.campionato+(p.isTop5 ? ' • TOP5' : '')+'</div></div><div style="text-align:right"><div style="color:#38bdf8;font-weight:bold">'+ora+'</div><div class="sm">▼ dettagli</div></div></div>' +
+    '<div class="match-card-stats"><div class="match-card-stat">⚽ Gol Attesi<b>'+p.golAttesi[0]+' - '+p.golAttesi[1]+'</b></div><div class="match-card-stat">1X2<b>'+p.modello.p1?.toFixed(0)+'/'+p.modello.pX?.toFixed(0)+'/'+p.modello.p2?.toFixed(0)+'</b></div><div class="match-card-stat">O/U 2.5<b>'+p.modello.over?.toFixed(0)+'/'+p.modello.under?.toFixed(0)+'</b></div></div>' +
+    '<div style="font-size:.8em;color:#94a3b8">GG/NG: '+p.modello.gol?.toFixed(0)+'% / '+p.modello.nogol?.toFixed(0)+'%</div>'+sugHtml +
+    '<div id="card-'+p.id+'" class="match-card-detail"><div class="match-card-bets">'+analisiHtml+'</div></div></div>';
 }).join("")}
 </div>
 </div>
 <div id="t2" class="card hide">
 <h2>🎫 Schedine Consigliate</h2>
 ${(d.schedine || []).length ? (d.schedine || []).map((s,idx) => {
-  const scommesseJson = JSON.stringify(s.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q}))).replace(/"/g, '&quot;');
+  const scommesseB64 = Buffer.from(JSON.stringify(s.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q})))).toString('base64');
   return `
 <div class="sch sch-row">
 <div class="sch-header"><div><b>${s.nome}</b> <span class="sm">(${s.tipo})</span></div><div class="sch-q">@${s.quotaTot?.toFixed(2)}</div></div>
 <div class="sch-bets">
 ${s.scommesse.map(bet => {
-  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
   const ora = bet.orario?.split(',')[1]?.trim() || '';
   return `<div class="sch-bet"><div class="sch-bet-match">${flag} ${bet.partita}</div><div class="sch-bet-info"><span class="sch-bet-tipo">${bet.t}</span> @${bet.q?.toFixed(2)} <span class="sm">• ${bet.prob?.toFixed(0)}%</span></div><div class="sch-bet-ora">${ora}</div></div>`;
 }).join("")}
 </div>
 <div class="sch-sim"><span>Puntata: €</span><input type="number" value="5" min="1" class="sch-puntata" onchange="this.nextElementSibling.textContent='€'+(this.value*${s.quotaTot}).toFixed(2)" oninput="this.nextElementSibling.textContent='€'+(this.value*${s.quotaTot}).toFixed(2)"><span class="sch-vincita">€${(5*s.quotaTot).toFixed(2)}</span></div>
-<button class="btn sch-play-btn" onclick='giocaSchedina(${scommesseJson}, ${s.quotaTot}, this.previousElementSibling.querySelector(".sch-puntata").value)'>▶️ Gioca Schedina</button>
+<button class="btn sch-play-btn" data-scommesse="${scommesseB64}" data-quota="${s.quotaTot}" onclick="giocaSchedinaB64(this)">▶️ Gioca Schedina</button>
 </div>`;
 }).join("") : "<p>Nessuna schedina disponibile</p>"}
 ${d.schedinaGol ? (() => {
-  const scommesseJson = JSON.stringify(d.schedinaGol.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q}))).replace(/"/g, '&quot;');
+  const scommesseB64 = Buffer.from(JSON.stringify(d.schedinaGol.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q})))).toString('base64');
   return `
 <div class="sch" style="border-left:3px solid #22c55e">
 <div class="sch-header"><div><b>${d.schedinaGol.nome}</b> <span class="sm">(${d.schedinaGol.tipo})</span></div><div class="sch-q">@${d.schedinaGol.quotaTot?.toFixed(2)}</div></div>
 <div class="sch-bets">
 ${d.schedinaGol.scommesse.map(bet => {
-  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
   const ora = bet.orario?.split(',')[1]?.trim() || '';
   return `<div class="sch-bet"><div class="sch-bet-match">${flag} ${bet.partita}</div><div class="sch-bet-info"><span class="sch-bet-tipo">${bet.t}</span> @${bet.q?.toFixed(2)} <span class="sm">• ${bet.prob?.toFixed(0)}%</span></div><div class="sch-bet-ora">${ora}</div></div>`;
 }).join("")}
 </div>
 <div class="sch-sim"><span>Puntata: €</span><input type="number" value="5" min="1" class="sch-puntata" onchange="this.nextElementSibling.textContent='€'+(this.value*${d.schedinaGol.quotaTot}).toFixed(2)" oninput="this.nextElementSibling.textContent='€'+(this.value*${d.schedinaGol.quotaTot}).toFixed(2)"><span class="sch-vincita">€${(5*d.schedinaGol.quotaTot).toFixed(2)}</span></div>
-<button class="btn sch-play-btn" onclick='giocaSchedina(${scommesseJson}, ${d.schedinaGol.quotaTot}, this.previousElementSibling.querySelector(".sch-puntata").value)'>▶️ Gioca Schedina</button>
+<button class="btn sch-play-btn" data-scommesse="${scommesseB64}" data-quota="${d.schedinaGol.quotaTot}" onclick="giocaSchedinaB64(this)">▶️ Gioca Schedina</button>
 </div>`;
 })() : ""}
 <div style="margin-top:20px;padding-top:15px;border-top:1px solid #334155">
-<h2>📋 Le Mie Schedine</h2>
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px">
+<h2 style="margin:0">📋 Le Mie Schedine</h2>
+<button class="btn" onclick="verificaTutteSchedine()">🔄 Verifica Tutte</button>
+</div>
 <div id="mieSchedineList"><p class="sm">Nessuna schedina giocata</p></div>
 </div>
 </div>
 <div id="t3" class="card hide">
 <h2>📊 Risultati Recenti</h2>
 <div style="display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap;align-items:center">
-<button class="btn" onclick="loadRisultati()">🔄 Aggiorna</button>
+<button class="btn" onclick="refreshRisultati()">🔄 Aggiorna da API</button>
 <select id="filterRisData" onchange="renderRisultati()" style="padding:8px;border-radius:6px;background:#334155;color:#e2e8f0;border:none">
 <option value="">📅 Tutte le date</option>
 </select>
@@ -1032,19 +1282,23 @@ ${d.schedinaGol.scommesse.map(bet => {
 </select>
 <a href="https://www.sofascore.com/football" target="_blank" class="btn" style="text-decoration:none;background:#475569;margin-left:auto">⚽ Live</a>
 </div>
-<div id="risultatiContainer"><p class="sm">Caricamento risultati...</p></div>
+<p id="risultatiTimestamp" class="sm" style="margin-bottom:10px;color:#64748b"></p>
+<div id="risultatiContainer"><p class="sm">Clicca "Aggiorna da API" per caricare i risultati.</p></div>
 <p class="sm" style="margin-top:10px">⚠️ Risultati aggiornati a fine partita. Per live usa Sofascore.</p>
 </div>
-<div id="miaSchedina" class="mia-schedina">
-<h3>🎫 La Mia Schedina <span id="schedinaCount">(0)</span>
-<button onclick="svuotaSchedina()" style="float:right;background:#ef4444;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:.8em">🗑 Svuota</button>
-<button id="verificaBtn" onclick="verificaSchedina()" style="float:right;background:#22c55e;color:#fff;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:.8em;margin-right:8px">✅ Verifica Risultati</button>
-</h3>
-<div id="schedinaList" class="mia-schedina-list"></div>
-<div class="mia-schedina-footer">
-<span>Puntata: €</span><input type="number" id="puntata" value="3" min="1" step="0.5" onchange="aggiornaVincita()" oninput="aggiornaVincita()">
-<span class="quota-tot">Quota: <span id="quotaTot">1.00</span></span>
-<span class="vincita">Vincita: €<span id="vincitaPot">0.00</span></span>
+<button id="schedinaFab" class="schedina-fab" onclick="openSchedinaModal()">🎫 Schedina <span class="count" id="fabCount">0</span></button>
+<div id="schedinaModal" class="schedina-modal" onclick="if(event.target===this)closeSchedinaModal()">
+<div class="schedina-modal-content">
+<div class="schedina-modal-header"><h3>🎫 La Mia Schedina</h3><button class="schedina-modal-close" onclick="closeSchedinaModal()">×</button></div>
+<div id="schedinaModalList" class="schedina-modal-list"></div>
+<div class="schedina-modal-footer">
+<span>€</span><input type="number" id="puntata" value="5" min="1" step="0.5" onchange="aggiornaVincita()" oninput="aggiornaVincita()">
+<div class="totals"><span class="quota-tot">@<span id="quotaTot">1.00</span></span><span class="vincita">Vincita: €<span id="vincitaPot">5.00</span></span></div>
+</div>
+<div class="schedina-modal-actions">
+<button class="btn" style="background:#ef4444" onclick="svuotaSchedina()">🗑️ Svuota</button>
+<button class="btn" style="background:#22c55e" onclick="salvaEChiudiSchedina()">💾 Salva</button>
+</div>
 </div>
 </div>
 <button class="btn" onclick="location.href='/api/cache-refresh'">🔄 Aggiorna (cache)</button>
@@ -1099,6 +1353,10 @@ function toggleAnalisi(id){
   const row = document.getElementById('analisi-'+id);
   if(row) row.classList.toggle('hide');
 }
+function toggleCardDetail(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('open');
+}
 function toggleExtra(id){
   const el = document.getElementById('extra-'+id);
   if(el) el.style.display = el.style.display === 'none' ? 'flex' : 'none';
@@ -1152,6 +1410,12 @@ function saveSchedina() {
 function saveMieSchedine() {
   localStorage.setItem('mieSchedine', JSON.stringify(mieSchedine));
   renderMieSchedine();
+  updateSchedineTabCount();
+}
+
+function updateSchedineTabCount() {
+  const el = document.getElementById('schedineTabCount');
+  if (el) el.textContent = '(' + mieSchedine.length + ')';
 }
 
 function giocaSchedina(scommesse, quotaTot, puntata) {
@@ -1169,6 +1433,13 @@ function giocaSchedina(scommesse, quotaTot, puntata) {
   showModal('✅', 'Schedina Aggiunta!', 'Vai su "Le Mie Schedine" per verificare i risultati.');
 }
 
+function giocaSchedinaB64(btn) {
+  const scommesse = JSON.parse(atob(btn.dataset.scommesse));
+  const quotaTot = parseFloat(btn.dataset.quota);
+  const puntata = btn.previousElementSibling.querySelector('.sch-puntata').value;
+  giocaSchedina(scommesse, quotaTot, puntata);
+}
+
 function toggleMiaSchedina(id) {
   const body = document.getElementById('mie-sch-body-'+id);
   if(body) body.classList.toggle('open');
@@ -1179,40 +1450,6 @@ function eliminaMiaSchedina(id) {
     mieSchedine = mieSchedine.filter(s => s.id !== id);
     saveMieSchedine();
   });
-}
-
-async function verificaMiaSchedina(id) {
-  const schedina = mieSchedine.find(s => s.id === id);
-  if(!schedina) return;
-  
-  try {
-    const res = await fetch('/api/verifica-schedina', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ partite: schedina.scommesse })
-    });
-    const data = await res.json();
-    
-    if(data.risultati) {
-      let vinte = 0, perse = 0, incorso = 0;
-      schedina.scommesse.forEach(s => {
-        const r = data.risultati.find(x => x.id === s.id);
-        if(r) {
-          schedina.risultati[s.id] = r;
-          if(r.stato === 'vinto') vinte++;
-          else if(r.stato === 'perso') perse++;
-          else incorso++;
-        } else incorso++;
-      });
-      
-      if(incorso === 0) {
-        schedina.stato = perse > 0 ? 'persa' : 'vinta';
-      }
-      saveMieSchedine();
-    }
-  } catch(e) {
-    showModal('❌', 'Errore', 'Verifica fallita: '+e.message);
-  }
 }
 
 function renderMieSchedine() {
@@ -1241,13 +1478,13 @@ function renderMieSchedine() {
       const r = s.risultati[bet.id];
       const betIcon = r ? (r.stato === 'vinto' ? ' ✅' : r.stato === 'perso' ? ' ❌' : ' ⏳') : '';
       const score = r?.match?.scores ? r.match.scores.map(x=>x.score).join('-') : '';
-      html += '<div class="mie-sch-bet">'+bet.partita+' → <b>'+bet.esito+'</b> @'+bet.quota.toFixed(2)+(score ? ' ('+score+')' : '')+betIcon+'</div>';
+      const oraShort = bet.orario ? '<span class="sm" style="color:#64748b"> '+bet.orario.split(',')[1]?.trim() || bet.orario+'</span>' : '';
+      html += '<div class="mie-sch-bet">'+bet.partita+oraShort+' → <b>'+bet.esito+'</b> @'+bet.quota.toFixed(2)+(score ? ' ('+score+')' : '')+betIcon+'</div>';
     });
     
     html += '<div class="mie-sch-footer">';
     html += '<span>Puntata: €'+s.puntata.toFixed(2)+'</span>';
-    html += '<div><button class="btn" style="padding:4px 8px;font-size:.75em" onclick="verificaMiaSchedina('+s.id+')">\ud83d\udd04 Verifica</button> ';
-    html += '<button class="btn" style="padding:4px 8px;font-size:.75em;background:#ef4444" onclick="eliminaMiaSchedina('+s.id+')">\ud83d\uddd1 Elimina</button></div>';
+    html += '<button class="btn" style="padding:6px 12px;font-size:.8em;background:#ef4444" onclick="eliminaMiaSchedina('+s.id+')">🗑 Elimina</button>';
     html += '</div></div></div>';
   });
   
@@ -1256,49 +1493,37 @@ function renderMieSchedine() {
 
 // Render Le Mie Schedine all'avvio
 renderMieSchedine();
+updateSchedineTabCount();
 
-function addToSchedina(id, partita, esito, quota) {
-  miaSchedina = miaSchedina.filter(s => s.id !== id);
-  miaSchedina.push({ id, partita, esito, quota, risultato: null });
-  saveSchedina();
-  renderSchedina();
+function openSchedinaModal() {
+  document.getElementById('schedinaModal').classList.add('show');
+  renderSchedinaModal();
 }
 
-function removeFromSchedina(id) {
-  miaSchedina = miaSchedina.filter(s => s.id !== id);
-  saveSchedina();
-  renderSchedina();
+function closeSchedinaModal() {
+  document.getElementById('schedinaModal').classList.remove('show');
 }
 
-function svuotaSchedina() {
-  miaSchedina = [];
-  saveSchedina();
-  renderSchedina();
-}
-
-function renderSchedina() {
-  const panel = document.getElementById('miaSchedina');
-  const list = document.getElementById('schedinaList');
-  const countEl = document.getElementById('schedinaCount');
+function renderSchedinaModal() {
+  const list = document.getElementById('schedinaModalList');
   const quotaTotEl = document.getElementById('quotaTot');
   
   if (miaSchedina.length === 0) {
-    panel.classList.remove('active');
+    list.innerHTML = '<p class="sm" style="text-align:center;padding:20px">Nessun evento aggiunto.<br>Vai su Partite e clicca su un esito.</p>';
+    quotaTotEl.textContent = '1.00';
+    aggiornaVincita();
     return;
   }
-  
-  panel.classList.add('active');
-  countEl.textContent = '(' + miaSchedina.length + ')';
   
   let html = '';
   let quotaTot = 1;
   miaSchedina.forEach(s => {
     quotaTot *= s.quota;
-    let statusIcon = '';
-    if (s.risultato === 'vinto') statusIcon = ' <span style="color:#22c55e">\u2705</span>';
-    else if (s.risultato === 'perso') statusIcon = ' <span style="color:#ef4444">\u274c</span>';
-    else if (s.risultato === 'incorso') statusIcon = ' <span style="color:#f59e0b">\u23f3</span>';
-    html += '<div class="mia-schedina-item"><span>' + s.partita + ' \u2192 <b>' + s.esito + '</b>' + statusIcon + '</span><span>@' + s.quota.toFixed(2) + '<span class="remove" onclick="removeFromSchedina(&quot;' + s.id + '&quot;)">❌</span></span></div>';
+    html += '<div class="schedina-modal-item">';
+    html += '<div class="info"><div class="partita">'+s.partita+'</div><div class="esito">'+s.esito+'</div></div>';
+    html += '<span class="quota">@'+s.quota.toFixed(2)+'</span>';
+    html += '<span class="remove" data-id="'+s.id+'" onclick="removeFromSchedina(this.dataset.id)">❌</span>';
+    html += '</div>';
   });
   
   list.innerHTML = html;
@@ -1306,63 +1531,135 @@ function renderSchedina() {
   aggiornaVincita();
 }
 
-function aggiornaVincita() {
-  const puntata = parseFloat(document.getElementById('puntata').value) || 0;
-  const quotaTot = parseFloat(document.getElementById('quotaTot').textContent) || 1;
-  const vincita = puntata * quotaTot;
-  document.getElementById('vincitaPot').textContent = vincita.toFixed(2);
+function addToSchedina(id, partita, esito, quota, orario) {
+  miaSchedina = miaSchedina.filter(s => s.id !== id);
+  miaSchedina.push({ id, partita, esito, quota, orario: orario || '' });
+  saveSchedina();
+  renderSchedina();
+  showModal('✅', 'Aggiunto!', partita+' → '+esito+' @'+quota.toFixed(2));
 }
 
-async function verificaSchedina() {
-  if (miaSchedina.length === 0) return;
+function removeFromSchedina(id) {
+  miaSchedina = miaSchedina.filter(s => s.id !== id);
+  saveSchedina();
+  renderSchedina();
+  renderSchedinaModal();
+}
+
+function svuotaSchedina() {
+  miaSchedina = [];
+  saveSchedina();
+  renderSchedina();
+  renderSchedinaModal();
+}
+
+function salvaEChiudiSchedina() {
+  if (miaSchedina.length === 0) {
+    showModal('⚠️', 'Schedina Vuota', 'Aggiungi almeno un evento.');
+    return;
+  }
+  const puntata = parseFloat(document.getElementById('puntata').value) || 5;
+  const quotaTot = miaSchedina.reduce((acc, s) => acc * s.quota, 1);
+  // Prendi la data dalla prima partita o usa oggi
+  const primaData = miaSchedina[0]?.orario?.split(',')[0] || new Date().toLocaleDateString('it');
+  const schedina = {
+    id: Date.now(),
+    data: primaData,
+    scommesse: miaSchedina.map(s => ({id: s.id, partita: s.partita, esito: s.esito, quota: s.quota, orario: s.orario || ''})),
+    quotaTot,
+    puntata,
+    stato: 'incorso',
+    risultati: {}
+  };
+  mieSchedine.unshift(schedina);
+  saveMieSchedine();
+  miaSchedina = [];
+  saveSchedina();
+  renderSchedina();
+  closeSchedinaModal();
+  showModal('✅', 'Schedina Salvata!', 'Vai su Schedine per verificare i risultati.');
+}
+
+function renderSchedina() {
+  const fab = document.getElementById('schedinaFab');
+  const fabCount = document.getElementById('fabCount');
   
-  const btn = document.getElementById('verificaBtn');
-  btn.textContent = '\u23f3 Verifica in corso...';
-  btn.disabled = true;
+  if (miaSchedina.length === 0) {
+    fab.classList.remove('active');
+    return;
+  }
+  
+  fab.classList.add('active');
+  fabCount.textContent = miaSchedina.length;
+}
+
+function aggiornaVincita() {
+  const puntata = parseFloat(document.getElementById('puntata')?.value) || 5;
+  const quotaTot = parseFloat(document.getElementById('quotaTot')?.textContent) || 1;
+  const vincita = puntata * quotaTot;
+  const el = document.getElementById('vincitaPot');
+  if(el) el.textContent = vincita.toFixed(2);
+}
+
+async function verificaTutteSchedine() {
+  const pendenti = mieSchedine.filter(s => s.stato === 'incorso');
+  if (pendenti.length === 0) {
+    showModal('ℹ️', 'Nessuna Schedina', 'Non ci sono schedine da verificare.');
+    return;
+  }
+  
+  // Raccogli tutte le partite uniche
+  const tuttePartite = [];
+  const idSet = new Set();
+  pendenti.forEach(s => {
+    s.scommesse.forEach(bet => {
+      if (!idSet.has(bet.id)) {
+        idSet.add(bet.id);
+        tuttePartite.push(bet);
+      }
+    });
+  });
+  
+  showModal('⏳', 'Verifica in corso...', 'Controllo '+tuttePartite.length+' partite...');
   
   try {
     const res = await fetch('/api/verifica-schedina', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ partite: miaSchedina })
+      body: JSON.stringify({ partite: tuttePartite })
     });
     const data = await res.json();
     
     if (data.risultati) {
-      miaSchedina = miaSchedina.map(s => {
-        const r = data.risultati.find(x => x.id === s.id);
-        if (r) s.risultato = r.stato;
-        return s;
+      // Applica risultati a tutte le schedine
+      let totVinte = 0, totPerse = 0, totIncorso = 0;
+      
+      pendenti.forEach(schedina => {
+        let vinte = 0, perse = 0, incorso = 0;
+        schedina.scommesse.forEach(bet => {
+          const r = data.risultati.find(x => x.id === bet.id);
+          if (r) {
+            schedina.risultati[bet.id] = r;
+            if (r.stato === 'vinto') vinte++;
+            else if (r.stato === 'perso') perse++;
+            else incorso++;
+          } else incorso++;
+        });
+        
+        if (incorso === 0) {
+          schedina.stato = perse > 0 ? 'persa' : 'vinta';
+          if (schedina.stato === 'vinta') totVinte++;
+          else totPerse++;
+        } else totIncorso++;
       });
-      saveSchedina();
-      renderSchedina();
       
-      const vinte = miaSchedina.filter(s => s.risultato === 'vinto').length;
-      const perse = miaSchedina.filter(s => s.risultato === 'perso').length;
-      const incorso = miaSchedina.filter(s => s.risultato === 'incorso' || !s.risultato).length;
-      
-      let msg = '\u2705 Vinte: ' + vinte + ' | \u274c Perse: ' + perse + ' | \u23f3 In corso: ' + incorso;
-      
-      if (incorso === 0) {
-        // Tutte finite!
-        if (perse > 0) {
-          showModal('❌', 'Schedina Persa', '✅ Vinte: '+vinte+' | ❌ Perse: '+perse);
-        } else {
-          const vincita = document.getElementById('vincitaPot').textContent;
-          showModal('🎉', 'Hai Vinto!', '✅ Tutte vinte! Vincita: €'+vincita);
-        }
-        // Aggiorna anche i risultati
-        loadRisultati();
-      } else {
-        showModal('⏳', 'Verifica Completata', '✅ Vinte: '+vinte+' | ❌ Perse: '+perse+' | ⏳ In corso: '+incorso);
-      }
+      saveMieSchedine();
+      closeModal();
+      showModal('📊', 'Verifica Completata', '✅ Vinte: '+totVinte+' | ❌ Perse: '+totPerse+' | ⏳ In corso: '+totIncorso);
     }
   } catch (e) {
     showModal('❌', 'Errore', 'Verifica fallita: '+e.message);
   }
-  
-  btn.textContent = '\u2705 Verifica Risultati';
-  btn.disabled = false;
 }
 
 // Carica schedina salvata all'avvio
@@ -1371,13 +1668,41 @@ renderSchedina();
 // Cache risultati
 let risultatiCache = null;
 
+async function refreshRisultati() {
+  const container = document.getElementById('risultatiContainer');
+  container.innerHTML = '<p>⏳ Caricamento da API...</p>';
+  try {
+    const res = await fetch('/api/risultati-refresh');
+    risultatiCache = await res.json();
+    renderRisultati();
+    updateTimestamp();
+    if (risultatiCache.newMatches > 0) {
+      showModal('✅', 'Aggiornato!', 'Trovate ' + risultatiCache.newMatches + ' nuove partite.');
+    } else {
+      showModal('ℹ️', 'Nessuna novità', 'Nessuna nuova partita completata.');
+    }
+  } catch (e) {
+    container.innerHTML = '<p style="color:#ef4444">Errore: ' + e.message + '</p>';
+  }
+}
+
+function updateTimestamp() {
+  const el = document.getElementById('risultatiTimestamp');
+  if (el && risultatiCache?.timestamp) {
+    const d = new Date(risultatiCache.timestamp);
+    const src = risultatiCache.source === 'api' ? 'API' : 'cache';
+    el.textContent = '🕒 Ultimo aggiornamento: ' + d.toLocaleString('it') + ' (' + src + ')';
+  }
+}
+
 async function loadRisultati() {
   const container = document.getElementById('risultatiContainer');
-  container.innerHTML = '<p>\u23f3 Caricamento...</p>';
+  container.innerHTML = '<p>⏳ Caricamento...</p>';
   try {
     const res = await fetch('/api/risultati');
     risultatiCache = await res.json();
     renderRisultati();
+    updateTimestamp();
   } catch (e) {
     container.innerHTML = '<p style="color:#ef4444">Errore: ' + e.message + '</p>';
   }
@@ -1392,7 +1717,7 @@ function renderRisultati() {
   
   const filterData = document.getElementById('filterRisData')?.value || '';
   const filterCamp = document.getElementById('filterRisCamp')?.value || '';
-  const flags = {'Italia | Serie A':'🇮🇹','Italia | Serie B':'🇮🇹','Inghilterra | Premier League':'🏴','Spagna | Liga':'🇪🇸','Germania | Bundesliga':'🇩🇪','Francia | Ligue 1':'🇫🇷','Olanda | Eredivisie':'🇳🇱','Portogallo | Primeira Liga':'🇵🇹','Turchia | Super Lig':'🇹🇷','Grecia | Super League':'🇬🇷'};
+  const flags = {'Italia | Serie A':'🇮🇹','Italia | Serie B':'🇮🇹','Inghilterra | Premier League':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Spagna | Liga':'🇪🇸','Germania | Bundesliga':'🇩🇪','Francia | Ligue 1':'🇫🇷','Olanda | Eredivisie':'🇳🇱','Portogallo | Primeira Liga':'🇵🇹','Turchia | Super Lig':'🇹🇷','Grecia | Super League':'🇬🇷'};
   
   // Popola filtri
   const dateSet = new Set();
@@ -1441,7 +1766,19 @@ function renderRisultati() {
     byLeague[m.league][data].push(m);
   });
   
-  for (const [league, dates] of Object.entries(byLeague)) {
+  // Ordina campionati: Top 5 prima, poi alfabetico
+  const leagueOrder = ['Italia | Serie A','Inghilterra | Premier League','Spagna | Liga','Germania | Bundesliga','Francia | Ligue 1'];
+  const sortedLeagues = Object.keys(byLeague).sort((a,b) => {
+    const aIdx = leagueOrder.indexOf(a);
+    const bIdx = leagueOrder.indexOf(b);
+    if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+    if (aIdx !== -1) return -1;
+    if (bIdx !== -1) return 1;
+    return a.localeCompare(b);
+  });
+  
+  for (const league of sortedLeagues) {
+    const dates = byLeague[league];
     const flag = flags[league] || '⚽';
     html += '<div style="background:#334155;border-radius:8px;padding:10px;margin-bottom:8px"><div style="color:#f59e0b;font-size:.9em;margin-bottom:8px;font-weight:bold">' + flag + ' ' + league + '</div>';
     

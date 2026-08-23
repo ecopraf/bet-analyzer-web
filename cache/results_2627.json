@@ -1,0 +1,788 @@
+{
+  "matches": {
+    "6c4e291875a301113d20658a1d6d345b": {
+      "home": "Vicenza",
+      "away": "US Catanzaro 1929",
+      "homeGoals": 3,
+      "awayGoals": 2,
+      "date": "2026-08-21T18:30:00Z"
+    },
+    "84204438a9c908db850d8a6a3a142aff": {
+      "home": "Carrarese",
+      "away": "Mantova",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "date": "2026-08-22T17:00:00Z"
+    },
+    "9bd50a8dece569c151e7aaa01d978f02": {
+      "home": "Südtirol",
+      "away": "Virtus Entella",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-22T17:00:00Z"
+    },
+    "440a7702ee234fe9e1f58d697130b0d1": {
+      "home": "Avellino",
+      "away": "Arezzo",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "date": "2026-08-22T19:00:00Z"
+    },
+    "302341207055a2bd67abdf33940d24c3": {
+      "home": "Empoli",
+      "away": "Cremonese",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-22T19:01:00Z"
+    },
+    "11308436676766036274329ed46852df": {
+      "home": "Benevento",
+      "away": "Modena",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "date": "2026-08-22T19:06:00Z"
+    },
+    "f2634db48eaf6526793cfc48047b540b": {
+      "home": "Hellas Verona",
+      "away": "Ascoli",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "date": "2026-08-23T17:00:00Z"
+    },
+    "e0998179e0126a222f6890531854a07a": {
+      "home": "Pisa",
+      "away": "Padova",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "date": "2026-08-23T17:00:00Z"
+    },
+    "eb2553d10d63dc912b99f8fd0d675721": {
+      "home": "Arsenal",
+      "away": "Coventry City",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "date": "2026-08-21T19:00:00Z"
+    },
+    "95bb16d19debff3ec39919f361f072a4": {
+      "home": "Hull City",
+      "away": "Manchester United",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "date": "2026-08-22T11:30:00Z"
+    },
+    "cd1f0173ec061d9b8a8b22ab8f2f8393": {
+      "home": "Everton",
+      "away": "Crystal Palace",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "date": "2026-08-22T14:00:00Z"
+    },
+    "01615d9573ef1e5aa8c09eb32a4a983b": {
+      "home": "Ipswich Town",
+      "away": "Sunderland",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "date": "2026-08-22T14:00:00Z"
+    },
+    "ee99154f8db029efcf567c5f7f7a0c0b": {
+      "home": "Nottingham Forest",
+      "away": "Leeds United",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "date": "2026-08-22T14:00:00Z"
+    },
+    "8b4b033209bb204516cbd1f523614f25": {
+      "home": "Brentford",
+      "away": "Tottenham Hotspur",
+      "homeGoals": 3,
+      "awayGoals": 0,
+      "date": "2026-08-22T16:30:00Z"
+    },
+    "f5086c74d4a767e3ad7ea69bd4a66b76": {
+      "home": "Brighton and Hove Albion",
+      "away": "Aston Villa",
+      "homeGoals": 4,
+      "awayGoals": 0,
+      "date": "2026-08-23T13:00:00Z"
+    },
+    "87c7c9bfd5e3072bded20c702f553c63": {
+      "home": "Manchester City",
+      "away": "Bournemouth",
+      "homeGoals": 2,
+      "awayGoals": 1,
+      "date": "2026-08-23T13:00:00Z"
+    },
+    "ea0bacc4c23f813c6af97ec9b306a850": {
+      "home": "Newcastle United",
+      "away": "Liverpool",
+      "homeGoals": 2,
+      "awayGoals": 2,
+      "date": "2026-08-23T15:30:00Z"
+    },
+    "623ff84505dae8a0598eefd6a15b5e14": {
+      "home": "Real Betis",
+      "away": "Real Sociedad",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-21T19:00:00Z"
+    },
+    "382e164289b17ff11f658279d77c1c1d": {
+      "home": "Athletic Bilbao",
+      "away": "Sevilla",
+      "homeGoals": 1,
+      "awayGoals": 3,
+      "date": "2026-08-22T15:00:00Z"
+    },
+    "1fd2c356ef34923d9cf24e2cb6933770": {
+      "home": "Valencia",
+      "away": "Celta Vigo",
+      "homeGoals": 0,
+      "awayGoals": 0,
+      "date": "2026-08-22T17:30:00Z"
+    },
+    "142b9f77470fa57ac5f1e1f69a28d44e": {
+      "home": "Espanyol",
+      "away": "Real Madrid",
+      "homeGoals": 1,
+      "awayGoals": 2,
+      "date": "2026-08-22T19:30:00Z"
+    },
+    "4290b7b558285b2ec3a5ed42feca310d": {
+      "home": "Atlético Madrid",
+      "away": "Villarreal",
+      "homeGoals": 2,
+      "awayGoals": 2,
+      "date": "2026-08-23T15:00:00Z"
+    },
+    "8ef1d272900aafd279fdb80f7d75e36e": {
+      "home": "Getafe",
+      "away": "Real Racing Club de Santander",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-23T17:30:00Z"
+    },
+    "600aeb3560814afc9a02bec5126b249d": {
+      "home": "Marseille",
+      "away": "Strasbourg",
+      "homeGoals": 4,
+      "awayGoals": 0,
+      "date": "2026-08-21T18:45:00Z"
+    },
+    "1835d30f4ac2e1f3462f0654e0ea984a": {
+      "home": "RC Lens",
+      "away": "Auxerre",
+      "homeGoals": 5,
+      "awayGoals": 2,
+      "date": "2026-08-22T15:15:00Z"
+    },
+    "0fe221a0fc71ab3ecfbecf8f1a224b89": {
+      "home": "Le Mans FC",
+      "away": "Brest",
+      "homeGoals": 2,
+      "awayGoals": 2,
+      "date": "2026-08-22T18:45:00Z"
+    },
+    "dd38b144d1f20e8eee148914f68f482c": {
+      "home": "Nice",
+      "away": "Lorient",
+      "homeGoals": 0,
+      "awayGoals": 0,
+      "date": "2026-08-22T18:45:00Z"
+    },
+    "e2b33e2f28135088d12b464684414353": {
+      "home": "Toulouse",
+      "away": "Lyon",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "date": "2026-08-22T18:45:00Z"
+    },
+    "78431f1842f3312e28537492ec14f081": {
+      "home": "Troyes",
+      "away": "Paris FC",
+      "homeGoals": 0,
+      "awayGoals": 0,
+      "date": "2026-08-22T18:45:00Z"
+    },
+    "48df026b72fffa82898ff0cfcb02878d": {
+      "home": "Angers",
+      "away": "Lille",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "date": "2026-08-23T13:00:00Z"
+    },
+    "38b23d1127eb086d775f97b935bbf992": {
+      "home": "Le Havre",
+      "away": "AS Monaco",
+      "homeGoals": 0,
+      "awayGoals": 1,
+      "date": "2026-08-23T15:15:00Z"
+    },
+    "7d23fb3e22dd7ba387dbad34e610d70b": {
+      "home": "Fortuna Sittard",
+      "away": "AZ Alkmaar",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "date": "2026-08-22T14:30:00Z"
+    },
+    "d0358260dc3ba713ae9e9e0a6c8cc7e6": {
+      "home": "Sparta Rotterdam",
+      "away": "FC Utrecht",
+      "homeGoals": 3,
+      "awayGoals": 3,
+      "date": "2026-08-22T16:45:00Z"
+    },
+    "ed6b50942b9897808564cf341d3943c3": {
+      "home": "Heerenveen",
+      "away": "FC Zwolle",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "date": "2026-08-22T19:00:00Z"
+    },
+    "c9c9af28f18102a573f7accbea612c77": {
+      "home": "Go Ahead Eagles",
+      "away": "ADO Den Haag",
+      "homeGoals": 3,
+      "awayGoals": 1,
+      "date": "2026-08-23T10:15:00Z"
+    },
+    "0e2847592d8c1441cd0463c35e9ed795": {
+      "home": "PSV Eindhoven",
+      "away": "Groningen",
+      "homeGoals": 5,
+      "awayGoals": 1,
+      "date": "2026-08-23T12:30:00Z"
+    },
+    "c3d8ca7eccde2beeba0ba9b5f0a1cd97": {
+      "home": "SC Cambuur",
+      "away": "Feyenoord",
+      "homeGoals": 2,
+      "awayGoals": 5,
+      "date": "2026-08-23T14:45:00Z"
+    },
+    "2cca300b46d9f8a86994894f3877657d": {
+      "home": "CS Maritimo",
+      "away": "Académico de Viseu",
+      "homeGoals": 2,
+      "awayGoals": 2,
+      "date": "2026-08-22T14:30:00Z"
+    },
+    "cc5275ca00a1e35d404a2ef5f3d68f61": {
+      "home": "Estoril",
+      "away": "Rio Ave FC",
+      "homeGoals": 0,
+      "awayGoals": 2,
+      "date": "2026-08-22T17:00:00Z"
+    },
+    "c502a6cff69b54f86167a5373f39a1a0": {
+      "home": "Sporting Lisbon",
+      "away": "Alverca",
+      "homeGoals": 3,
+      "awayGoals": 1,
+      "date": "2026-08-22T19:33:00Z"
+    },
+    "51e3ad789b0cbd70eaae085effe6a169": {
+      "home": "Vitória SC",
+      "away": "Nacional",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-23T14:32:00Z"
+    },
+    "cd69dc990e387d5c96551c389e92a4db": {
+      "home": "Santa Clara",
+      "away": "Famalicão",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-23T17:00:00Z"
+    },
+    "cbc24f633e082a6d864b947e96889d6e": {
+      "home": "AEK Athens",
+      "away": "Iraklis FC",
+      "homeGoals": 4,
+      "awayGoals": 0,
+      "date": "2026-08-22T17:00:00Z"
+    },
+    "df3ce9b5afc713a8bca59f773258ea2b": {
+      "home": "Kalamata FC",
+      "away": "Aris Thessaloniki",
+      "homeGoals": 2,
+      "awayGoals": 3,
+      "date": "2026-08-22T17:00:00Z"
+    },
+    "70d42a4be5c1830b52cbe4e8bc3cb912": {
+      "home": "Olympiakos Piraeus",
+      "away": "Atromitos Athens",
+      "homeGoals": 1,
+      "awayGoals": 0,
+      "date": "2026-08-22T18:30:00Z"
+    },
+    "468a2edf40bf3bc7fde6a8638d55bcdd": {
+      "home": "OFI Crete",
+      "away": "Volos FC",
+      "homeGoals": 2,
+      "awayGoals": 0,
+      "date": "2026-08-23T16:30:00Z"
+    }
+  },
+  "stats": {
+    "Vicenza": {
+      "gf": 3,
+      "gs": 2,
+      "matches": 1
+    },
+    "US Catanzaro 1929": {
+      "gf": 2,
+      "gs": 3,
+      "matches": 1
+    },
+    "Carrarese": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Mantova": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Südtirol": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Virtus Entella": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Avellino": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Arezzo": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Empoli": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Cremonese": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Benevento": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Modena": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Hellas Verona": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Ascoli": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Pisa": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Padova": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Arsenal": {
+      "gf": 3,
+      "gs": 0,
+      "matches": 1
+    },
+    "Coventry City": {
+      "gf": 0,
+      "gs": 3,
+      "matches": 1
+    },
+    "Hull City": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Manchester United": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "Everton": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Crystal Palace": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "Ipswich Town": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Sunderland": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Nottingham Forest": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Leeds United": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Brentford": {
+      "gf": 3,
+      "gs": 0,
+      "matches": 1
+    },
+    "Tottenham Hotspur": {
+      "gf": 0,
+      "gs": 3,
+      "matches": 1
+    },
+    "Brighton and Hove Albion": {
+      "gf": 4,
+      "gs": 0,
+      "matches": 1
+    },
+    "Aston Villa": {
+      "gf": 0,
+      "gs": 4,
+      "matches": 1
+    },
+    "Manchester City": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Bournemouth": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Newcastle United": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Liverpool": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Real Betis": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Real Sociedad": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Athletic Bilbao": {
+      "gf": 1,
+      "gs": 3,
+      "matches": 1
+    },
+    "Sevilla": {
+      "gf": 3,
+      "gs": 1,
+      "matches": 1
+    },
+    "Valencia": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Celta Vigo": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Espanyol": {
+      "gf": 1,
+      "gs": 2,
+      "matches": 1
+    },
+    "Real Madrid": {
+      "gf": 2,
+      "gs": 1,
+      "matches": 1
+    },
+    "Atlético Madrid": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Villarreal": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Getafe": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Real Racing Club de Santander": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Marseille": {
+      "gf": 4,
+      "gs": 0,
+      "matches": 1
+    },
+    "Strasbourg": {
+      "gf": 0,
+      "gs": 4,
+      "matches": 1
+    },
+    "RC Lens": {
+      "gf": 5,
+      "gs": 2,
+      "matches": 1
+    },
+    "Auxerre": {
+      "gf": 2,
+      "gs": 5,
+      "matches": 1
+    },
+    "Le Mans FC": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Brest": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Nice": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Lorient": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Toulouse": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "Lyon": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Troyes": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Paris FC": {
+      "gf": 0,
+      "gs": 0,
+      "matches": 1
+    },
+    "Angers": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "Lille": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Le Havre": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "AS Monaco": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Fortuna Sittard": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "AZ Alkmaar": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Sparta Rotterdam": {
+      "gf": 3,
+      "gs": 3,
+      "matches": 1
+    },
+    "FC Utrecht": {
+      "gf": 3,
+      "gs": 3,
+      "matches": 1
+    },
+    "Heerenveen": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "FC Zwolle": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Go Ahead Eagles": {
+      "gf": 3,
+      "gs": 1,
+      "matches": 1
+    },
+    "ADO Den Haag": {
+      "gf": 1,
+      "gs": 3,
+      "matches": 1
+    },
+    "PSV Eindhoven": {
+      "gf": 5,
+      "gs": 1,
+      "matches": 1
+    },
+    "Groningen": {
+      "gf": 1,
+      "gs": 5,
+      "matches": 1
+    },
+    "SC Cambuur": {
+      "gf": 2,
+      "gs": 5,
+      "matches": 1
+    },
+    "Feyenoord": {
+      "gf": 5,
+      "gs": 2,
+      "matches": 1
+    },
+    "CS Maritimo": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Académico de Viseu": {
+      "gf": 2,
+      "gs": 2,
+      "matches": 1
+    },
+    "Estoril": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    },
+    "Rio Ave FC": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Sporting Lisbon": {
+      "gf": 3,
+      "gs": 1,
+      "matches": 1
+    },
+    "Alverca": {
+      "gf": 1,
+      "gs": 3,
+      "matches": 1
+    },
+    "Vitória SC": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Nacional": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "Santa Clara": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Famalicão": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "AEK Athens": {
+      "gf": 4,
+      "gs": 0,
+      "matches": 1
+    },
+    "Iraklis FC": {
+      "gf": 0,
+      "gs": 4,
+      "matches": 1
+    },
+    "Kalamata FC": {
+      "gf": 2,
+      "gs": 3,
+      "matches": 1
+    },
+    "Aris Thessaloniki": {
+      "gf": 3,
+      "gs": 2,
+      "matches": 1
+    },
+    "Olympiakos Piraeus": {
+      "gf": 1,
+      "gs": 0,
+      "matches": 1
+    },
+    "Atromitos Athens": {
+      "gf": 0,
+      "gs": 1,
+      "matches": 1
+    },
+    "OFI Crete": {
+      "gf": 2,
+      "gs": 0,
+      "matches": 1
+    },
+    "Volos FC": {
+      "gf": 0,
+      "gs": 2,
+      "matches": 1
+    }
+  }
+}

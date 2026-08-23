@@ -16,13 +16,16 @@ node test-local.js
 ## 📁 Struttura Progetto
 
 ```
-server.js          # Server Express monolitico (~900 righe)
-                   # - Backend API + Frontend HTML inline
-                   # - Modello Poisson + logica value bet
-                   # - CSS/JS embedded nella funzione getHTML()
-cache/             # Cache settimanale quote JSON
-package.json       # Solo express@4.18.2, Node 20.x
-render.yaml        # Deploy Render.com
+server.js                    # Server Express monolitico (~1400 righe)
+                             # - Backend API + Frontend HTML inline
+                             # - Modello Poisson + logica value bet
+                             # - CSS/JS embedded nella funzione getHTML()
+cache/
+  historical_2526.json       # Dati storici 25/26 (184 squadre) - FISSO
+  results_2627.json          # Risultati 26/27 locale (backup)
+package.json                 # Solo express@4.18.2, Node 20.x
+render.yaml                  # Deploy Render.com
+Bet-Analyzer-Favicon.png     # Favicon custom
 ```
 
 ## 🔑 API Esterne
@@ -31,15 +34,44 @@ render.yaml        # Deploy Render.com
 - 4 chiavi in `ODDS_API_KEYS[]` con rotazione automatica
 - Markets: `h2h`, `totals`, `btts`, `spreads`, `double_chance`
 - 500 req/mese per chiave (piano gratuito)
+- **Chiamate API solo su richiesta utente** (bottoni dedicati)
 
 ### Football-Data.co.uk
 - CSV stagione 2025/26 in `HISTORICAL_URLS`
 - Dati storici per calcolo λ (lambda)
+- Cache locale in `cache/historical_2526.json`
+
+### JSONBin.io
+- Master Key: configurata in `JSONBIN_MASTER_KEY`
+- Bin: `bet-analyzer-results-2627` (creato automaticamente)
+- Persistenza risultati stagione corrente su Render
+
+## 📊 Sistema Pesi Dinamici
+
+```javascript
+// Soglia: 15 partite per squadra = 100% dati correnti
+const WEIGHT_THRESHOLD = 15;
+
+// Calcolo peso
+Se partite_correnti >= 15 → 100% stagione corrente
+Altrimenti:
+  peso_corrente = partite / 15
+  peso_storico = 1 - peso_corrente
+
+// Esempio: 5 partite → 33% corrente, 67% storico
+```
+
+| Giornate | Peso 26/27 | Peso 25/26 |
+|----------|------------|------------|
+| 0 | 0% | 100% |
+| 5 | 33% | 67% |
+| 10 | 67% | 33% |
+| 15+ | 100% | 0% |
 
 ## 📊 Modello Matematico
 
 ```javascript
-// Lambda (gol attesi)
+// Lambda (gol attesi) - usa stats pesate
 λ Casa = (attacco_casa * difesa_ospite / 1.35) * 1.1    // +10% casa
 λ Ospite = (attacco_ospite * difesa_casa / 1.35) * 0.9  // -10% trasferta
 
@@ -58,16 +90,26 @@ Value = P(modello) - (100 / quota)  // Valido se > 3%
 | GG | ≥55% | λC≥1 E λO≥1 | >2% |
 | NG | ≥55% | λC<1 O λO<1 | >2% |
 
+## 🎫 Schedine Auto-Generate
+
+| Tipo | Logica |
+|------|--------|
+| **Raddoppio** | 1-3 eventi fino a quota ≥2, ordinati per (prob + value) |
+| **Mista Gol/Over** | Max 6 eventi GG/Over 2.5, quota min 1.45 |
+| **Schedina Gol** | Combinazione GG/NG |
+
 ## 🔄 API Endpoints
 
-| Endpoint | Descrizione |
-|----------|-------------|
-| `GET /` | Dashboard HTML |
-| `GET /api/data` | JSON completo |
-| `GET /api/refresh` | Forza fetch API |
-| `GET /api/cache-refresh` | Usa cache |
-| `GET /api/risultati` | Risultati 48h |
-| `POST /api/verifica-schedina` | Verifica esiti |
+| Endpoint | Chiama API? | Descrizione |
+|----------|-------------|-------------|
+| `GET /` | ❌ | Dashboard HTML |
+| `GET /api/data` | ❌ | JSON completo (da cache) |
+| `GET /api/refresh` | ✅ | Forza fetch quote da API |
+| `GET /api/cache-refresh` | ❌ | Usa cache locale |
+| `GET /api/risultati` | ❌ | Risultati da JSONBin (cache) |
+| `GET /api/risultati-refresh` | ✅ | Fetch risultati da API + salva JSONBin |
+| `POST /api/verifica-schedina` | ✅ | Verifica esiti + aggiorna JSONBin |
+| `GET /favicon.png` | ❌ | Favicon custom |
 
 ## 🏆 10 Campionati
 
@@ -77,23 +119,68 @@ Serie A, Serie B, Premier League, Liga, Bundesliga, Ligue 1, Eredivisie, Primeir
 
 ## 🎨 UI - 4 Tab
 
-1. **💎 Value** - Value bets ordinati (tabella con colonne fisse)
-2. **⚽ Partite** - Analisi espandibile + pulsante "More"
-3. **🎫 Schedine** - Auto-generate + personalizzata (localStorage)
-4. **📊 Live** - Risultati recenti
+1. **💎 Value** - Value bets ordinati (tabella desktop, cards mobile)
+2. **⚽ Partite** - Analisi espandibile + cards mobile con dettagli
+3. **🎫 Schedine** - Auto-generate + "Le Mie Schedine" + "Verifica Tutte"
+4. **📊 Live** - Risultati recenti con timestamp ultimo aggiornamento
+
+## 📱 Mobile UX
+
+- **FAB Schedina**: Pulsante flottante in basso a destra con counter
+- **Modal Schedina**: Apre dettagli, puntata, salva/svuota
+- **Cards Partite**: Layout card invece di tabella su mobile
+- **Cards espandibili**: Click per vedere dettagli e aggiungere a schedina
+
+## 🎫 Flusso Schedina Utente
+
+1. Vai su **Partite** → clicca esito → aggiunto a schedina
+2. Clicca **FAB** (🎫 Schedina) → vedi dettagli
+3. Imposta puntata → **💾 Salva**
+4. Vai su **Schedine** → vedi in "Le Mie Schedine"
+5. Clicca **🔄 Verifica Tutte** → controlla risultati
 
 ## ⚠️ Regole Sviluppo
 
-### Escape HTML
+### ❌ MAI usare escape Unicode nel JS inline
 ```javascript
-const safe = value.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+// ❌ SBAGLIATO - causa "Unexpected string" error
+el.textContent = '\u23f3 Caricamento...';
+el.textContent = '\ud83d\udd52 Ultimo aggiornamento';
+showModal('\u2705', 'Titolo', 'Messaggio');
+
+// ✅ CORRETTO - usa emoji direttamente
+el.textContent = '⏳ Caricamento...';
+el.textContent = '🕒 Ultimo aggiornamento';
+showModal('✅', 'Titolo', 'Messaggio');
+```
+
+### Escape HTML (per onclick con JSON)
+```javascript
+// ❌ SBAGLIATO - virgolette rompono onclick
+onclick='func({"key":"value"})'
+
+// ✅ CORRETTO - usa base64 per dati complessi
+const scommesseB64 = Buffer.from(JSON.stringify(data)).toString('base64');
+// HTML: data-scommesse="${scommesseB64}" onclick="func(this)"
+// JS browser: JSON.parse(atob(btn.dataset.scommesse))
+```
+
+### Escape stringhe in onclick
+```javascript
+// ❌ SBAGLIATO - \' dentro stringa singola non funziona
+html += '<span onclick="func(\''+id+'\')">X</span>';
+// Produce: onclick="func('id')" - ERRORE!
+
+// ✅ CORRETTO - usa \x27 per apostrofo
+html += '<span onclick="func(\x27'+id+'\x27)">X</span>';
+// Produce: onclick="func('id')" - OK!
 ```
 
 ### Colori UI
 - Verde `#22c55e` - Value positivo, vinto
 - Rosso `#ef4444` - Value negativo, perso
 - Arancione `#f59e0b` - In corso, Top5
-- Blu `#3b82f6` - Quote, azioni
+- Blu `#3b82f6` - Quote, azioni, FAB
 
 ### CSS Tabella Value (t0)
 ```css
@@ -106,15 +193,32 @@ table{table-layout:fixed}
 #t0 table th:nth-child(6),td:nth-child(6){width:14%}  /* Value */
 ```
 
+### Modal Custom
+```javascript
+showModal(icon, title, message, onConfirm?)
+// onConfirm = null → solo OK
+// onConfirm = function → Annulla + Conferma
+```
+
 ### Cache
-- File: `cache/quotes_week_YYYY-WNN.json`
-- Refresh automatico ogni 15 minuti
-- "Fetch API" cancella e rigenera cache
+- Quote: `cache/quotes_week_YYYY-WNN.json` (refresh 15 min)
+- Storico: `cache/historical_2526.json` (fisso, committato)
+- Corrente: JSONBin.io (persistente su Render)
 
 ## 🚀 Deploy
 
 ```bash
 # Render.com (auto da GitHub)
-# oppure manuale:
+# Filesystem effimero → JSONBin.io per persistenza
+
+# Locale
 npm install && npm start
 ```
+
+## 📝 Note Importanti
+
+- **Stagione corrente**: 2026/27
+- **Stagione storica**: 2025/26
+- **Lingua UI**: Italiano
+- **API calls**: Solo su bottoni dedicati (risparmio quota)
+- **Render**: Filesystem effimero, usa JSONBin per dati persistenti
