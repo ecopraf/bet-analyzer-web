@@ -589,20 +589,45 @@ function generaSchedine(valueBets, partite) {
   
   // Filtra solo partite di oggi
   const valueBetsOggi = valueBets.filter(v => v.data === oggi);
+  const partiteOggi = partite.filter(p => p.data === oggi);
   
-  const sicure = valueBetsOggi.filter(v => v.prob > 60).slice(0, 1);
-  if (sicure.length) {
-    schedine.push({ nome: "🎯 Singola Sicura", tipo: "Basso rischio", scommesse: sicure, quotaTot: sicure.reduce((acc, v) => acc * v.q, 1) });
+  // 🎯 Schedina Raddoppio: aggiungi eventi sicuri finché quota >= 2 (max 3)
+  const sicure = valueBetsOggi.filter(v => v.prob >= 55 && v.d >= 3).sort((a,b) => b.prob - a.prob);
+  let raddoppio = [];
+  let quotaRaddoppio = 1;
+  for (const s of sicure) {
+    if (quotaRaddoppio >= 2 || raddoppio.length >= 3) break;
+    raddoppio.push(s);
+    quotaRaddoppio *= s.q;
+  }
+  if (raddoppio.length >= 1 && quotaRaddoppio >= 2) {
+    schedine.push({ nome: "🎯 Raddoppio", tipo: "Quota ≥2 sicura", scommesse: raddoppio, quotaTot: quotaRaddoppio });
   }
   
-  const topValue = valueBetsOggi.filter(v => v.prob > 55).slice(0, 2);
-  if (topValue.length === 2) {
-    schedine.push({ nome: "💎 Doppia Value", tipo: "Rischio medio", scommesse: topValue, quotaTot: topValue.reduce((acc, v) => acc * v.q, 1) });
-  }
+  // ⚽ Schedina Mista Gol/Over: max 5-6 eventi, quota min 1.45, value + prob alta
+  const golOver = partiteOggi.filter(p => {
+    const ggOk = p.modello.gol >= 55 && p.quote.qGG >= 1.45;
+    const overOk = p.modello.over >= 55 && p.quote.qO >= 1.45;
+    return ggOk || overOk;
+  }).map(p => {
+    // Scegli il migliore tra GG e Over per questa partita
+    const ggValue = p.modello.gol - (p.quote.qGG ? 100/p.quote.qGG : 100);
+    const overValue = p.modello.over - (p.quote.qO ? 100/p.quote.qO : 100);
+    const ggOk = p.modello.gol >= 55 && p.quote.qGG >= 1.45;
+    const overOk = p.modello.over >= 55 && p.quote.qO >= 1.45;
+    
+    if (ggOk && overOk) {
+      return ggValue > overValue 
+        ? { t: 'GG', q: p.quote.qGG, prob: p.modello.gol, d: ggValue, partita: p.partita, camp: p.campionato, orario: p.orario }
+        : { t: 'Over 2.5', q: p.quote.qO, prob: p.modello.over, d: overValue, partita: p.partita, camp: p.campionato, orario: p.orario };
+    }
+    if (ggOk) return { t: 'GG', q: p.quote.qGG, prob: p.modello.gol, d: ggValue, partita: p.partita, camp: p.campionato, orario: p.orario };
+    if (overOk) return { t: 'Over 2.5', q: p.quote.qO, prob: p.modello.over, d: overValue, partita: p.partita, camp: p.campionato, orario: p.orario };
+    return null;
+  }).filter(Boolean).sort((a,b) => (b.prob + b.d) - (a.prob + a.d)).slice(0, 6);
   
-  const tris = valueBetsOggi.filter(v => v.prob > 50).slice(0, 3);
-  if (tris.length === 3) {
-    schedine.push({ nome: "🔥 Tris", tipo: "Rischio medio-alto", scommesse: tris, quotaTot: tris.reduce((acc, v) => acc * v.q, 1) });
+  if (golOver.length >= 3) {
+    schedine.push({ nome: "⚽ Mista Gol/Over", tipo: "GG + Over 2.5 value", scommesse: golOver, quotaTot: golOver.reduce((acc, v) => acc * v.q, 1) });
   }
   
   return schedine;
