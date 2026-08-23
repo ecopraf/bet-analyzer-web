@@ -88,12 +88,22 @@ async function fetchEventi() {
   const visti = new Set();
 
   page.on("response", async (res) => {
-    if (res.url().includes("getOverviewEventsAams")) {
+    const url = res.url();
+    // Log tutte le chiamate API per debug
+    if (url.includes("/api/") || url.includes("Event") || url.includes("event") || url.includes("sport")) {
+      console.log(`API: ${url.substring(0, 120)}`);
+    }
+    if (url.includes("getOverviewEventsAams") || url.includes("Event")) {
       try {
         const json = await res.json();
-        for (const e of json?.leo || [])
-          if (!visti.has(e.ei)) { visti.add(e.ei); eventi.push(e); }
-      } catch {}
+        console.log(`Response keys: ${Object.keys(json).join(", ")}`);
+        const evList = json?.leo || json?.events || json?.data?.events || [];
+        console.log(`Eventi in response: ${evList.length}`);
+        for (const e of evList)
+          if (e.ei && !visti.has(e.ei)) { visti.add(e.ei); eventi.push(e); }
+      } catch (err) {
+        console.log(`Parse error: ${err.message}`);
+      }
     }
   });
 
@@ -101,6 +111,18 @@ async function fetchEventi() {
     waitUntil: "networkidle2", timeout: 60000
   });
   console.log("Pagina caricata");
+  
+  // Screenshot debug - log HTML structure
+  const pageTitle = await page.title();
+  console.log(`Titolo pagina: ${pageTitle}`);
+  
+  // Cerca elementi menu
+  const menuItems = await page.evaluate(() => {
+    const items = [...document.querySelectorAll("span,div,a")].filter(e => e.innerText?.trim().length > 0 && e.innerText?.trim().length < 30);
+    return items.slice(0, 20).map(e => e.innerText?.trim());
+  });
+  console.log(`Menu items trovati: ${menuItems.join(" | ")}`);
+  
   await new Promise(r => setTimeout(r, 5000));
 
   const menu = [["Italia", "Serie A"], ["Italia", "Serie B"], ["Inghilterra", "Premier League"],
@@ -109,10 +131,21 @@ async function fetchEventi() {
   for (const [paese, torneo] of menu) {
     try {
       console.log(`Navigando a ${paese} > ${torneo}...`);
-      await page.evaluate(p => [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === p)?.click(), paese);
-      await new Promise(r => setTimeout(r, 1500));
-      await page.evaluate(t => [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === t)?.click(), torneo);
+      const clickedPaese = await page.evaluate(p => {
+        const el = [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === p);
+        if (el) { el.click(); return true; }
+        return false;
+      }, paese);
+      console.log(`Click ${paese}: ${clickedPaese}`);
       await new Promise(r => setTimeout(r, 2000));
+      
+      const clickedTorneo = await page.evaluate(t => {
+        const el = [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === t);
+        if (el) { el.click(); return true; }
+        return false;
+      }, torneo);
+      console.log(`Click ${torneo}: ${clickedTorneo}`);
+      await new Promise(r => setTimeout(r, 2500));
     } catch (e) {
       console.log(`Errore navigazione ${paese}/${torneo}: ${e.message}`);
     }
