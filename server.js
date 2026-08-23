@@ -748,6 +748,7 @@ function getHTML() {
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bet Analyzer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui;background:#0f172a;color:#e2e8f0;padding:15px;padding-bottom:180px}
