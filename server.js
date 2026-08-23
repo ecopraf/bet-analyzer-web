@@ -764,6 +764,10 @@ app.get("/api/risultati", async (req, res) => {
   res.json({ scores, timestamp: new Date().toISOString() });
 });
 
+app.get("/favicon.png", (req, res) => {
+  res.sendFile(path.join(__dirname, "Bet-Analyzer-Favicon.png"));
+});
+
 app.get("/", (req, res) => {
   res.send(getHTML());
 });
@@ -773,7 +777,7 @@ function getHTML() {
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bet Analyzer</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+<link rel="icon" href="/favicon.png" type="image/png">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui;background:#0f172a;color:#e2e8f0;padding:15px;padding-bottom:180px}
@@ -803,7 +807,44 @@ th{color:#94a3b8}
 .btn:active{transform:translateY(0)}
 .hide{display:none}
 .sch{background:#1e3a5f;border-radius:8px;padding:12px;margin-bottom:10px}
-.sch-q{font-size:1.3em;color:#22c55e;float:right}
+.sch-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.sch-q{font-size:1.3em;color:#22c55e;font-weight:bold}
+.sch-bets{margin-bottom:10px}
+.sch-bet{display:flex;flex-wrap:wrap;align-items:center;padding:8px 0;border-bottom:1px solid #334155;gap:4px}
+.sch-bet:last-child{border-bottom:none}
+.sch-bet-match{flex:1;min-width:60%;font-size:.9em}
+.sch-bet-info{font-size:.85em}
+.sch-bet-tipo{background:#3b82f6;color:#fff;padding:2px 6px;border-radius:4px;font-weight:bold;font-size:.8em}
+.sch-bet-ora{color:#64748b;font-size:.75em;margin-left:auto}
+.sch-play-btn{width:100%;margin-top:8px;background:#22c55e}
+.sch-play-btn:hover{background:#16a34a}
+.sch-sim{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px;background:#334155;border-radius:6px;font-size:.85em}
+.sch-puntata{width:60px;padding:4px;border-radius:4px;border:none;background:#1e293b;color:#e2e8f0;text-align:center}
+.sch-vincita{color:#22c55e;font-weight:bold;margin-left:auto}
+.mie-sch{background:#334155;border-radius:8px;margin-bottom:8px;overflow:hidden}
+.mie-sch-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer}
+.mie-sch-header:hover{background:#475569}
+.mie-sch-nome{font-weight:bold}
+.mie-sch-stato{font-size:.9em}
+.mie-sch-body{display:none;padding:10px 12px;background:#1e293b;border-top:1px solid #475569}
+.mie-sch-body.open{display:block}
+.mie-sch-bet{padding:6px 0;border-bottom:1px solid #334155;font-size:.85em}
+.mie-sch-bet:last-child{border-bottom:none}
+.mie-sch-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #334155}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;visibility:hidden;transition:all .2s}
+.modal-overlay.show{opacity:1;visibility:visible}
+.modal{background:#1e293b;border-radius:12px;padding:20px;max-width:90%;width:320px;text-align:center;transform:scale(.9);transition:transform .2s}
+.modal-overlay.show .modal{transform:scale(1)}
+.modal-icon{font-size:3em;margin-bottom:10px}
+.modal-title{font-size:1.1em;font-weight:bold;margin-bottom:8px;color:#e2e8f0}
+.modal-msg{color:#94a3b8;font-size:.9em;margin-bottom:15px}
+.modal-btn{background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-size:.9em;margin:0 4px}
+.modal-btn:hover{background:#2563eb}
+.modal-btn.cancel{background:#475569}
+.modal-btn.cancel:hover{background:#334155}
+.modal-btn.danger{background:#ef4444}
+.modal-btn.danger:hover{background:#dc2626}
+.modal-btns{display:flex;justify-content:center;gap:8px}
 .row{padding:6px 0;border-bottom:1px solid #334155}
 .row:last-child{border-bottom:none}
 .sm{color:#94a3b8;font-size:.8em}
@@ -942,32 +983,42 @@ ${d.partite.map(p => {
 </div>
 <div id="t2" class="card hide">
 <h2>🎫 Schedine Consigliate</h2>
-${(d.schedine || []).length ? (d.schedine || []).map(s => `
+${(d.schedine || []).length ? (d.schedine || []).map((s,idx) => {
+  const scommesseJson = JSON.stringify(s.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q}))).replace(/"/g, '&quot;');
+  return `
 <div class="sch sch-row">
-<div class="sch-q">@${s.quotaTot?.toFixed(2)}</div>
-<b>${s.nome}</b> <span class="sm">(${s.tipo})</span>
-<div style="margin-top:8px">
+<div class="sch-header"><div><b>${s.nome}</b> <span class="sm">(${s.tipo})</span></div><div class="sch-q">@${s.quotaTot?.toFixed(2)}</div></div>
+<div class="sch-bets">
 ${s.scommesse.map(bet => {
-  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴‍☠️","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
-  const orario = bet.orario ? '<span style="color:#64748b">🕒 '+bet.orario.split(',')[1]?.trim()+'</span> ' : ''; return `<div class="row">${orario}${flag} ${bet.partita} → <b>${bet.t}</b> @${bet.q?.toFixed(2)} <span class="sm">(${bet.prob?.toFixed(0)}% prob)</span></div>`;
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
+  const ora = bet.orario?.split(',')[1]?.trim() || '';
+  return `<div class="sch-bet"><div class="sch-bet-match">${flag} ${bet.partita}</div><div class="sch-bet-info"><span class="sch-bet-tipo">${bet.t}</span> @${bet.q?.toFixed(2)} <span class="sm">• ${bet.prob?.toFixed(0)}%</span></div><div class="sch-bet-ora">${ora}</div></div>`;
 }).join("")}
 </div>
-</div>`).join("") : "<p>Nessuna schedina disponibile</p>"}
-${d.schedinaGol ? `
+<div class="sch-sim"><span>Puntata: €</span><input type="number" value="5" min="1" class="sch-puntata" onchange="this.nextElementSibling.textContent='€'+(this.value*${s.quotaTot}).toFixed(2)" oninput="this.nextElementSibling.textContent='€'+(this.value*${s.quotaTot}).toFixed(2)"><span class="sch-vincita">€${(5*s.quotaTot).toFixed(2)}</span></div>
+<button class="btn sch-play-btn" onclick='giocaSchedina(${scommesseJson}, ${s.quotaTot}, this.previousElementSibling.querySelector(".sch-puntata").value)'>▶️ Gioca Schedina</button>
+</div>`;
+}).join("") : "<p>Nessuna schedina disponibile</p>"}
+${d.schedinaGol ? (() => {
+  const scommesseJson = JSON.stringify(d.schedinaGol.scommesse.map(b => ({id: b.partita.replace(/[^a-z0-9]/gi,''), partita: b.partita, esito: b.t, quota: b.q}))).replace(/"/g, '&quot;');
+  return `
 <div class="sch" style="border-left:3px solid #22c55e">
-<div class="sch-q">@${d.schedinaGol.quotaTot?.toFixed(2)}</div>
-<b>${d.schedinaGol.nome}</b> <span class="sm">(${d.schedinaGol.tipo})</span>
-<div style="margin-top:8px">
+<div class="sch-header"><div><b>${d.schedinaGol.nome}</b> <span class="sm">(${d.schedinaGol.tipo})</span></div><div class="sch-q">@${d.schedinaGol.quotaTot?.toFixed(2)}</div></div>
+<div class="sch-bets">
 ${d.schedinaGol.scommesse.map(bet => {
-  const flag = {
-    "Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸",
-    "Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹",
-    "Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"
-  }[bet.camp] || "⚽";
-  const orario = bet.orario ? '<span style="color:#64748b">🕒 '+bet.orario.split(',')[1]?.trim()+'</span> ' : ''; return `<div class="row">${orario}${flag} ${bet.partita} → <b>${bet.t}</b> @${bet.q?.toFixed(2)} <span class="sm">(${bet.prob?.toFixed(0)}%)</span></div>`;
+  const flag = {"Italia | Serie A":"🇮🇹","Italia | Serie B":"🇮🇹","Inghilterra | Premier League":"🏴","Spagna | Liga":"🇪🇸","Germania | Bundesliga":"🇩🇪","Francia | Ligue 1":"🇫🇷","Olanda | Eredivisie":"🇳🇱","Portogallo | Primeira Liga":"🇵🇹","Turchia | Super Lig":"🇹🇷","Grecia | Super League":"🇬🇷"}[bet.camp] || "⚽";
+  const ora = bet.orario?.split(',')[1]?.trim() || '';
+  return `<div class="sch-bet"><div class="sch-bet-match">${flag} ${bet.partita}</div><div class="sch-bet-info"><span class="sch-bet-tipo">${bet.t}</span> @${bet.q?.toFixed(2)} <span class="sm">• ${bet.prob?.toFixed(0)}%</span></div><div class="sch-bet-ora">${ora}</div></div>`;
 }).join("")}
 </div>
-</div>` : ""}
+<div class="sch-sim"><span>Puntata: €</span><input type="number" value="5" min="1" class="sch-puntata" onchange="this.nextElementSibling.textContent='€'+(this.value*${d.schedinaGol.quotaTot}).toFixed(2)" oninput="this.nextElementSibling.textContent='€'+(this.value*${d.schedinaGol.quotaTot}).toFixed(2)"><span class="sch-vincita">€${(5*d.schedinaGol.quotaTot).toFixed(2)}</span></div>
+<button class="btn sch-play-btn" onclick='giocaSchedina(${scommesseJson}, ${d.schedinaGol.quotaTot}, this.previousElementSibling.querySelector(".sch-puntata").value)'>▶️ Gioca Schedina</button>
+</div>`;
+})() : ""}
+<div style="margin-top:20px;padding-top:15px;border-top:1px solid #334155">
+<h2>📋 Le Mie Schedine</h2>
+<div id="mieSchedineList"><p class="sm">Nessuna schedina giocata</p></div>
+</div>
 </div>
 <div id="t3" class="card hide">
 <h2>📊 Risultati Recenti</h2>
@@ -997,7 +1048,7 @@ ${d.schedinaGol.scommesse.map(bet => {
 </div>
 </div>
 <button class="btn" onclick="location.href='/api/cache-refresh'">🔄 Aggiorna (cache)</button>
-<button class="btn" style="background:#dc2626;margin-left:8px" onclick="if(confirm('Fetch nuove quote da API?')) location.href='/api/refresh'">⚡ Fetch API</button>
+<button class="btn" style="background:#dc2626;margin-left:8px" onclick="showModal('⚡', 'Fetch API', 'Vuoi forzare il fetch delle nuove quote da API?', () => location.href='/api/refresh')">⚡ Fetch API</button>
 <div class="card" style="margin-top:15px">
 <h2>📊 Metodologia</h2>
 <div class="sm" style="line-height:1.6">
@@ -1007,7 +1058,39 @@ ${d.schedinaGol.scommesse.map(bet => {
 <p style="margin-top:8px"><b>⚠️ Disclaimer:</b> Questo strumento è solo a scopo informativo. Le scommesse comportano rischi finanziari.</p>
 </div>
 </div>
+<div id="modal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div class="modal">
+<div class="modal-icon" id="modalIcon"></div>
+<div class="modal-title" id="modalTitle"></div>
+<div class="modal-msg" id="modalMsg"></div>
+<div class="modal-btns" id="modalBtns"></div>
+</div>
+</div>
 <script>
+let modalCallback = null;
+function showModal(icon, title, msg, onConfirm) {
+  document.getElementById('modalIcon').textContent = icon;
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent = msg;
+  const btns = document.getElementById('modalBtns');
+  if(onConfirm) {
+    modalCallback = onConfirm;
+    btns.innerHTML = '<button class="modal-btn cancel" onclick="closeModal()">Annulla</button><button class="modal-btn danger" onclick="confirmModal()">Conferma</button>';
+  } else {
+    modalCallback = null;
+    btns.innerHTML = '<button class="modal-btn" onclick="closeModal()">OK</button>';
+  }
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  modalCallback = null;
+}
+function confirmModal() {
+  document.getElementById('modal').classList.remove('show');
+  if(modalCallback) modalCallback();
+  modalCallback = null;
+}
 function show(i){
   document.querySelectorAll('.card').forEach((c,j)=>{if(j<4)c.classList.toggle('hide',i!==j)});
   document.querySelectorAll('.tab').forEach((t,j)=>{t.classList.toggle('active',i===j)});
@@ -1060,10 +1143,119 @@ function applyFilters(){
 
 // Schedina personalizzata (con localStorage)
 let miaSchedina = JSON.parse(localStorage.getItem('miaSchedina') || '[]');
+let mieSchedine = JSON.parse(localStorage.getItem('mieSchedine') || '[]');
 
 function saveSchedina() {
   localStorage.setItem('miaSchedina', JSON.stringify(miaSchedina));
 }
+
+function saveMieSchedine() {
+  localStorage.setItem('mieSchedine', JSON.stringify(mieSchedine));
+  renderMieSchedine();
+}
+
+function giocaSchedina(scommesse, quotaTot, puntata) {
+  const schedina = {
+    id: Date.now(),
+    data: new Date().toLocaleDateString('it'),
+    scommesse: scommesse,
+    quotaTot: quotaTot,
+    puntata: parseFloat(puntata) || 5,
+    stato: 'incorso',
+    risultati: {}
+  };
+  mieSchedine.unshift(schedina);
+  saveMieSchedine();
+  showModal('✅', 'Schedina Aggiunta!', 'Vai su "Le Mie Schedine" per verificare i risultati.');
+}
+
+function toggleMiaSchedina(id) {
+  const body = document.getElementById('mie-sch-body-'+id);
+  if(body) body.classList.toggle('open');
+}
+
+function eliminaMiaSchedina(id) {
+  showModal('🗑️', 'Elimina Schedina', 'Vuoi eliminare questa schedina?', () => {
+    mieSchedine = mieSchedine.filter(s => s.id !== id);
+    saveMieSchedine();
+  });
+}
+
+async function verificaMiaSchedina(id) {
+  const schedina = mieSchedine.find(s => s.id === id);
+  if(!schedina) return;
+  
+  try {
+    const res = await fetch('/api/verifica-schedina', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partite: schedina.scommesse })
+    });
+    const data = await res.json();
+    
+    if(data.risultati) {
+      let vinte = 0, perse = 0, incorso = 0;
+      schedina.scommesse.forEach(s => {
+        const r = data.risultati.find(x => x.id === s.id);
+        if(r) {
+          schedina.risultati[s.id] = r;
+          if(r.stato === 'vinto') vinte++;
+          else if(r.stato === 'perso') perse++;
+          else incorso++;
+        } else incorso++;
+      });
+      
+      if(incorso === 0) {
+        schedina.stato = perse > 0 ? 'persa' : 'vinta';
+      }
+      saveMieSchedine();
+    }
+  } catch(e) {
+    showModal('❌', 'Errore', 'Verifica fallita: '+e.message);
+  }
+}
+
+function renderMieSchedine() {
+  const container = document.getElementById('mieSchedineList');
+  if(!container) return;
+  
+  if(mieSchedine.length === 0) {
+    container.innerHTML = '<p class="sm">Nessuna schedina giocata</p>';
+    return;
+  }
+  
+  let html = '';
+  mieSchedine.forEach(s => {
+    const statoIcon = s.stato === 'vinta' ? '✅' : s.stato === 'persa' ? '❌' : '⏳';
+    const statoColor = s.stato === 'vinta' ? '#22c55e' : s.stato === 'persa' ? '#ef4444' : '#f59e0b';
+    const vincita = s.stato === 'vinta' ? ' +€'+(s.puntata * s.quotaTot).toFixed(2) : '';
+    
+    html += '<div class="mie-sch">';
+    html += '<div class="mie-sch-header" onclick="toggleMiaSchedina('+s.id+')">';
+    html += '<span class="mie-sch-nome">🎫 Schedina ('+s.data+')</span>';
+    html += '<span class="mie-sch-stato" style="color:'+statoColor+'">@'+s.quotaTot.toFixed(2)+' '+statoIcon+vincita+'</span>';
+    html += '</div>';
+    html += '<div id="mie-sch-body-'+s.id+'" class="mie-sch-body">';
+    
+    s.scommesse.forEach(bet => {
+      const r = s.risultati[bet.id];
+      const betIcon = r ? (r.stato === 'vinto' ? ' ✅' : r.stato === 'perso' ? ' ❌' : ' ⏳') : '';
+      const score = r?.match?.scores ? r.match.scores.map(x=>x.score).join('-') : '';
+      html += '<div class="mie-sch-bet">'+bet.partita+' → <b>'+bet.esito+'</b> @'+bet.quota.toFixed(2)+(score ? ' ('+score+')' : '')+betIcon+'</div>';
+    });
+    
+    html += '<div class="mie-sch-footer">';
+    html += '<span>Puntata: €'+s.puntata.toFixed(2)+'</span>';
+    html += '<div><button class="btn" style="padding:4px 8px;font-size:.75em" onclick="verificaMiaSchedina('+s.id+')">\ud83d\udd04 Verifica</button> ';
+    html += '<button class="btn" style="padding:4px 8px;font-size:.75em;background:#ef4444" onclick="eliminaMiaSchedina('+s.id+')">\ud83d\uddd1 Elimina</button></div>';
+    html += '</div></div></div>';
+  });
+  
+  container.innerHTML = html;
+}
+
+// Render Le Mie Schedine all'avvio
+renderMieSchedine();
 
 function addToSchedina(id, partita, esito, quota) {
   miaSchedina = miaSchedina.filter(s => s.id !== id);
@@ -1154,20 +1346,19 @@ async function verificaSchedina() {
       if (incorso === 0) {
         // Tutte finite!
         if (perse > 0) {
-          msg = '\ud83d\udcca SCHEDINA COMPLETATA\\n\\n' + msg + '\\n\\n\u274c Schedina PERSA';
+          showModal('❌', 'Schedina Persa', '✅ Vinte: '+vinte+' | ❌ Perse: '+perse);
         } else {
           const vincita = document.getElementById('vincitaPot').textContent;
-          msg = '\ud83c\udf89 SCHEDINA COMPLETATA\\n\\n' + msg + '\\n\\n\ud83d\udcb0 HAI VINTO \u20ac' + vincita + '!';
+          showModal('🎉', 'Hai Vinto!', '✅ Tutte vinte! Vincita: €'+vincita);
         }
         // Aggiorna anche i risultati
         loadRisultati();
       } else {
-        msg += '\\n\\nAlcune partite sono ancora in corso...';
+        showModal('⏳', 'Verifica Completata', '✅ Vinte: '+vinte+' | ❌ Perse: '+perse+' | ⏳ In corso: '+incorso);
       }
-      alert(msg);
     }
   } catch (e) {
-    alert('Errore verifica: ' + e.message);
+    showModal('❌', 'Errore', 'Verifica fallita: '+e.message);
   }
   
   btn.textContent = '\u2705 Verifica Risultati';
