@@ -8,7 +8,8 @@ const ODDS_API_KEYS = [
   "8bd3b61169f49c3fad0882858a7f7e2c",
   "4e7832401d5cf057776e63db2fced411",
   "84ab684569c2387945bda6b23cc16e1d",
-  "f4dc183f73651f7c16ce8156003ea00d"
+  "f4dc183f73651f7c16ce8156003ea00d",
+  "5db0195c0cbee8634e614257b9d33cdf"
 ];
 let currentKeyIndex = 0;
 const exhaustedKeys = new Set(); // Chiavi esaurite questo ciclo
