@@ -4,17 +4,14 @@
   "description": "Dashboard analisi scommesse con modello Poisson",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "npx puppeteer browsers install chrome"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "puppeteer": "^21.6.1"
+    "puppeteer-core": "^21.6.1",
+    "@sparticuz/chromium": "^119.0.2"
   },
   "engines": {
-    "node": "18.x"
-  },
-  "allowScripts": {
-    "puppeteer@21.11.0": true
+    "node": "20.x"
   }
 }

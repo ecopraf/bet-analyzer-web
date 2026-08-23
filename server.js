@@ -1,5 +1,6 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -74,8 +75,10 @@ function getLambda(casa, ospite) {
 async function fetchEventi() {
   console.log("Fetching eventi da Planetwin365...");
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath(),
+    headless: chromium.headless,
   });
   console.log("Browser avviato");
   const page = await browser.newPage();
