@@ -31,7 +31,11 @@ Bet-Analyzer-Favicon.png     # Favicon custom
 ## 🔑 API Esterne
 
 ### The Odds API
-- 4 chiavi in `ODDS_API_KEYS[]` con rotazione automatica
+- 4 chiavi in `ODDS_API_KEYS[]` con rotazione smart
+- `exhaustedKeys` Set traccia chiavi esaurite (401)
+- `markKeyExhausted(key)` marca e logga chiave esaurita
+- Su 401: marca chiave, riprova con prossima disponibile
+- Se tutte esaurite: resetta Set e riprova
 - Markets: `h2h`, `totals`, `btts`, `spreads`, `double_chance`
 - 500 req/mese per chiave (piano gratuito)
 - **Chiamate API solo su richiesta utente** (bottoni dedicati)
@@ -122,7 +126,7 @@ Serie A, Serie B, Premier League, Liga, Bundesliga, Ligue 1, Eredivisie, Primeir
 1. **💎 Value** - Value bets ordinati (tabella desktop, cards mobile)
 2. **⚽ Partite** - Analisi espandibile + cards mobile con dettagli
 3. **🎫 Schedine** - Auto-generate + "Le Mie Schedine" + "Verifica Tutte"
-4. **📊 Live** - Risultati recenti con timestamp ultimo aggiornamento
+4. **📊 Live** - Risultati recenti, ordinati per campionato (Top 5 prima), timestamp ultimo aggiornamento
 
 ## 📱 Mobile UX
 
