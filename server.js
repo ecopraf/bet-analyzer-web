@@ -1,6 +1,8 @@
 const express = require("express");
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
+// Per locale usa puppeteer, per Render usa puppeteer-core
+const isLocal = !process.env.RENDER;
+const puppeteer = isLocal ? require("puppeteer") : require("puppeteer-core");
+const chromium = isLocal ? null : require("@sparticuz/chromium");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -74,12 +76,16 @@ function getLambda(casa, ospite) {
 // Fetch da Planetwin365
 async function fetchEventi() {
   console.log("Fetching eventi da Planetwin365...");
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath(),
-    headless: chromium.headless,
-  });
+  const browser = await puppeteer.launch(
+    isLocal 
+      ? { headless: true }
+      : {
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        }
+  );
   console.log("Browser avviato");
   const page = await browser.newPage();
   await page.setUserAgent("Mozilla/5.0");
@@ -270,8 +276,10 @@ body{font-family:system-ui;background:#0f172a;color:#e2e8f0;padding:15px}
 h1{color:#38bdf8;font-size:1.5em}
 .upd{color:#64748b;font-size:.85em;margin:5px 0 15px}
 .tabs{display:flex;gap:8px;margin-bottom:15px}
-.tab{padding:8px 16px;background:#334155;border-radius:6px;cursor:pointer;font-size:.9em}
+.tab{padding:8px 16px;background:#334155;border-radius:6px;cursor:pointer;font-size:.9em;transition:all .2s}
+.tab:hover{background:#475569;transform:translateY(-1px)}
 .tab.active{background:#3b82f6}
+.tab.active:hover{background:#2563eb}
 .card{background:#1e293b;border-radius:10px;padding:15px;margin-bottom:15px}
 .card h2{color:#f59e0b;font-size:1.1em;margin-bottom:10px}
 table{width:100%;border-collapse:collapse;font-size:.85em}
@@ -280,7 +288,9 @@ th{color:#94a3b8}
 .top5{border-left:3px solid #f59e0b}
 .val{color:#22c55e;font-weight:bold}
 .q{color:#38bdf8}
-.btn{background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-top:10px;font-size:.9em}
+.btn{background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-top:10px;font-size:.9em;transition:all .2s}
+.btn:hover{background:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.4)}
+.btn:active{transform:translateY(0)}
 .hide{display:none}
 .sch{background:#1e3a5f;border-radius:8px;padding:12px;margin-bottom:10px}
 .sch-q{font-size:1.3em;color:#22c55e;float:right}
