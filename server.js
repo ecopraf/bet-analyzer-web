@@ -592,7 +592,7 @@ function generaSchedine(valueBets, partite) {
   const partiteOggi = partite.filter(p => p.data === oggi);
   
   // 🎯 Schedina Raddoppio: aggiungi eventi sicuri finché quota >= 2 (max 3)
-  const sicure = valueBetsOggi.filter(v => v.prob >= 55 && v.d >= 3).sort((a,b) => b.prob - a.prob);
+  const sicure = valueBetsOggi.filter(v => v.prob >= 55 && v.d >= 3).sort((a,b) => (b.prob + b.d) - (a.prob + a.d));
   let raddoppio = [];
   let quotaRaddoppio = 1;
   for (const s of sicure) {
