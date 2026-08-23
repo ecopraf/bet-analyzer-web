@@ -72,11 +72,12 @@ function getLambda(casa, ospite) {
 
 // Fetch da Planetwin365
 async function fetchEventi() {
-  console.log("Fetching...");
+  console.log("Fetching eventi da Planetwin365...");
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
   });
+  console.log("Browser avviato");
   const page = await browser.newPage();
   await page.setUserAgent("Mozilla/5.0");
 
@@ -94,22 +95,27 @@ async function fetchEventi() {
   });
 
   await page.goto("https://www.planetwin365.it/it/scommesse-sportive#/sport/s/1/calcio", {
-    waitUntil: "networkidle2", timeout: 30000
+    waitUntil: "networkidle2", timeout: 60000
   });
-  await new Promise(r => setTimeout(r, 3000));
+  console.log("Pagina caricata");
+  await new Promise(r => setTimeout(r, 5000));
 
   const menu = [["Italia", "Serie A"], ["Italia", "Serie B"], ["Inghilterra", "Premier League"],
     ["Spagna", "Liga"], ["Germania", "Bundesliga"], ["Francia", "Ligue 1"], ["Olanda", "Eredivisie"]];
 
   for (const [paese, torneo] of menu) {
     try {
+      console.log(`Navigando a ${paese} > ${torneo}...`);
       await page.evaluate(p => [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === p)?.click(), paese);
-      await new Promise(r => setTimeout(r, 1000));
-      await page.evaluate(t => [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === t)?.click(), torneo);
       await new Promise(r => setTimeout(r, 1500));
-    } catch {}
+      await page.evaluate(t => [...document.querySelectorAll("span,div,a")].find(e => e.innerText?.trim() === t)?.click(), torneo);
+      await new Promise(r => setTimeout(r, 2000));
+    } catch (e) {
+      console.log(`Errore navigazione ${paese}/${torneo}: ${e.message}`);
+    }
   }
 
+  console.log(`Trovati ${eventi.length} eventi totali`);
   await browser.close();
   return eventi;
 }
