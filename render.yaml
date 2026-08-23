@@ -2,8 +2,5 @@ services:
   - type: web
     name: bet-analyzer
     env: node
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: node server.js
-    envVars:
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: false
