@@ -9,6 +9,21 @@ const PORT = process.env.PORT || 3000;
 
 let cachedData = null;
 let lastUpdate = null;
+let currentBrowser = null;
+let server = null;
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\nChiusura in corso...');
+  if (currentBrowser) await currentBrowser.close().catch(() => {});
+  if (server) server.close();
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  if (currentBrowser) await currentBrowser.close().catch(() => {});
+  if (server) server.close();
+  process.exit(0);
+});
 
 // Modello Poisson
 function poisson(k, lambda) {
@@ -86,9 +101,32 @@ async function fetchEventi() {
           headless: chromium.headless,
         }
   );
+  currentBrowser = browser;
   console.log("Browser avviato");
   const page = await browser.newPage();
-  await page.setUserAgent("Mozilla/5.0");
+  
+  // Anti-detection: headers realistici
+  await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+  await page.setExtraHTTPHeaders({
+    'Accept-Language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Cache-Control': 'max-age=0'
+  });
+  
+  // Nascondi webdriver
+  await page.evaluateOnNewDocument(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+    Object.defineProperty(navigator, 'languages', { get: () => ['it-IT', 'it', 'en-US', 'en'] });
+    window.chrome = { runtime: {} };
+  });
 
   let eventi = [];
   const visti = new Set();
@@ -159,6 +197,7 @@ async function fetchEventi() {
 
   console.log(`Trovati ${eventi.length} eventi totali`);
   await browser.close();
+  currentBrowser = null;
   return eventi;
 }
 
@@ -316,6 +355,15 @@ ${d.valueBets.slice(0, 15).map(v => `<tr class="${v.isTop5 ? "top5" : ""}"><td>$
 ${d.partite.map(p => `<tr class="${p.isTop5 ? "top5" : ""}"><td>${p.partita}${p.isTop5 ? '<span class="badge">TOP5</span>' : ""}<br><span class="sm">${p.campionato}</span></td><td>${p.golAttesi[0]}-${p.golAttesi[1]}</td><td>${p.modello.p1?.toFixed(0)}/${p.modello.pX?.toFixed(0)}/${p.modello.p2?.toFixed(0)}</td><td>${p.modello.over?.toFixed(0)}/${p.modello.under?.toFixed(0)}</td></tr>`).join("")}</table>
 </div>
 <button class="btn" onclick="location.href='/api/refresh'">🔄 Aggiorna Dati</button>
+<div class="card" style="margin-top:15px">
+<h2>📊 Metodologia</h2>
+<div class="sm" style="line-height:1.6">
+<p><b>Modello Poisson:</b> Calcola la probabilità di ogni risultato basandosi sui gol attesi (λ) di ogni squadra. λ Casa e λ Ospite derivano dalla forza offensiva/difensiva storica delle squadre.</p>
+<p style="margin-top:8px"><b>Value Bet:</b> Si verifica quando la probabilità calcolata dal modello è superiore alla probabilità implicita della quota del bookmaker di almeno il 5%. Formula: <i>Value = P(modello) - (100/quota)</i></p>
+<p style="margin-top:8px"><b>1X2:</b> Probabilità vittoria casa/pareggio/vittoria ospite | <b>O/U 2.5:</b> Over/Under 2.5 gol | <b>GG/NG:</b> Entrambe segnano / No</p>
+<p style="margin-top:8px"><b>⚠️ Disclaimer:</b> Questo strumento è solo a scopo informativo. Le scommesse comportano rischi finanziari.</p>
+</div>
+</div>
 <script>
 function show(i){document.querySelectorAll('.card').forEach((c,j)=>{c.classList.toggle('hide',i!==j)});document.querySelectorAll('.tab').forEach((t,j)=>{t.classList.toggle('active',i===j)})}
 </script></body></html>`;
@@ -323,6 +371,6 @@ function show(i){document.querySelectorAll('.card').forEach((c,j)=>{c.classList.
 
 // Start
 aggiorna().then(() => {
-  app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
+  server = app.listen(PORT, () => console.log(`Server: http://localhost:${PORT}`));
 });
 setInterval(aggiorna, 15 * 60 * 1000);
